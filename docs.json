@@ -1,0 +1,1938 @@
+{
+  "documents": [
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/1",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": "09125556888"
+        },
+        "name": {
+          "stringValue": "احمد عبدالله"
+        },
+        "specialization": {
+          "stringValue": "2"
+        }
+      },
+      "createTime": "2025-08-19T10:13:05.623406Z",
+      "updateTime": "2025-08-19T12:17:59.499417Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/10",
+      "fields": {
+        "photoUrl": {
+          "stringValue": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQupVHd_oeqnkds0k3EjT1SX4ctwwblwYP2Uw&s"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "id": {
+          "integerValue": "10"
+        },
+        "specialization": {
+          "stringValue": "4"
+        },
+        "name": {
+          "stringValue": "الصادق أبوالقاسم"
+        }
+      },
+      "createTime": "2025-08-21T17:19:28.772826Z",
+      "updateTime": "2025-08-21T17:19:28.772826Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/100",
+      "fields": {
+        "name": {
+          "stringValue": "اسامه اديب"
+        },
+        "id": {
+          "integerValue": "100"
+        },
+        "specialization": {
+          "stringValue": "7"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T19:17:42.063267Z",
+      "updateTime": "2025-08-22T19:17:42.063267Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/101",
+      "fields": {
+        "specialization": {
+          "stringValue": "7"
+        },
+        "id": {
+          "integerValue": "101"
+        },
+        "name": {
+          "stringValue": "معاذ حسين عيسى"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T19:20:19.047207Z",
+      "updateTime": "2025-08-22T19:21:50.939144Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/102",
+      "fields": {
+        "name": {
+          "stringValue": "رامي صلاح"
+        },
+        "specialization": {
+          "stringValue": "7"
+        },
+        "id": {
+          "integerValue": "102"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T19:23:43.633744Z",
+      "updateTime": "2025-08-22T19:23:43.633744Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/103",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "عمار محمد صالح"
+        },
+        "id": {
+          "integerValue": "103"
+        },
+        "specialization": {
+          "stringValue": "7"
+        }
+      },
+      "createTime": "2025-08-22T19:25:07.375676Z",
+      "updateTime": "2025-08-22T19:25:07.375676Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/104",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "امين محمد"
+        },
+        "specialization": {
+          "stringValue": "7"
+        },
+        "id": {
+          "integerValue": "104"
+        }
+      },
+      "createTime": "2025-08-22T19:25:33.336655Z",
+      "updateTime": "2025-08-22T19:25:33.336655Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/105",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "اسماعيل محمد"
+        },
+        "specialization": {
+          "stringValue": "7"
+        },
+        "id": {
+          "integerValue": "105"
+        }
+      },
+      "createTime": "2025-08-22T19:26:04.871021Z",
+      "updateTime": "2025-08-22T19:26:04.871021Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/106",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "بكري ايوب"
+        },
+        "id": {
+          "integerValue": "106"
+        },
+        "specialization": {
+          "stringValue": "7"
+        }
+      },
+      "createTime": "2025-08-22T19:26:30.990232Z",
+      "updateTime": "2025-08-22T19:26:30.990232Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/107",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "عمر محمد اسماعيل"
+        },
+        "id": {
+          "integerValue": "107"
+        },
+        "specialization": {
+          "stringValue": "7"
+        }
+      },
+      "createTime": "2025-08-22T19:28:02.019746Z",
+      "updateTime": "2025-08-22T19:28:02.019746Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/108",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "حسن بشير علي"
+        },
+        "id": {
+          "integerValue": "108"
+        },
+        "specialization": {
+          "stringValue": "7"
+        }
+      },
+      "createTime": "2025-08-22T19:28:34.201732Z",
+      "updateTime": "2025-08-22T19:28:34.201732Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/109",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "ميسون النو"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "id": {
+          "integerValue": "109"
+        }
+      },
+      "createTime": "2025-08-22T21:18:47.333012Z",
+      "updateTime": "2025-08-22T21:18:47.333012Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/11",
+      "fields": {
+        "photoUrl": {
+          "stringValue": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQupVHd_oeqnkds0k3EjT1SX4ctwwblwYP2Uw&s"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "id": {
+          "integerValue": "11"
+        },
+        "specialization": {
+          "stringValue": "4"
+        },
+        "name": {
+          "stringValue": "محمد عبدالعظيم أبوسالمه"
+        }
+      },
+      "createTime": "2025-08-21T17:21:06.577078Z",
+      "updateTime": "2025-08-21T17:21:06.577078Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/110",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "امال عثمان"
+        },
+        "id": {
+          "integerValue": "110"
+        },
+        "specialization": {
+          "stringValue": "1"
+        }
+      },
+      "createTime": "2025-08-22T21:19:03.652908Z",
+      "updateTime": "2025-08-22T21:19:03.652908Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/111",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "زينب علي احمد"
+        },
+        "id": {
+          "integerValue": "111"
+        },
+        "specialization": {
+          "stringValue": "1"
+        }
+      },
+      "createTime": "2025-08-22T21:19:19.666820Z",
+      "updateTime": "2025-08-22T21:19:19.666820Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/112",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "اسماعيل جعفر"
+        },
+        "id": {
+          "integerValue": "112"
+        },
+        "specialization": {
+          "stringValue": "1"
+        }
+      },
+      "createTime": "2025-08-22T21:19:36.775853Z",
+      "updateTime": "2025-08-22T21:19:36.775853Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/113",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "صفاء عثمان"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "id": {
+          "integerValue": "113"
+        }
+      },
+      "createTime": "2025-08-22T21:19:51.239992Z",
+      "updateTime": "2025-08-22T21:19:51.239992Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/114",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "سلمى عبدالرحمن"
+        },
+        "id": {
+          "integerValue": "114"
+        },
+        "specialization": {
+          "stringValue": "1"
+        }
+      },
+      "createTime": "2025-08-22T21:20:06.042905Z",
+      "updateTime": "2025-08-22T21:20:06.042905Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/115",
+      "fields": {
+        "name": {
+          "stringValue": "إيمان النو"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "id": {
+          "integerValue": "115"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T21:20:29.660072Z",
+      "updateTime": "2025-08-22T21:20:29.660072Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/116",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "حنين صلاح"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "id": {
+          "integerValue": "116"
+        }
+      },
+      "createTime": "2025-08-22T21:20:52.178021Z",
+      "updateTime": "2025-08-22T21:20:52.178021Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/117",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "ميسون عبدالرحيم"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "id": {
+          "integerValue": "117"
+        }
+      },
+      "createTime": "2025-08-22T21:21:10.834713Z",
+      "updateTime": "2025-08-22T21:21:10.834713Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/118",
+      "fields": {
+        "name": {
+          "stringValue": "امل عبدالله"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "id": {
+          "integerValue": "118"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T21:21:29.568553Z",
+      "updateTime": "2025-08-22T21:21:29.568553Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/119",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "ابوزيد"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "id": {
+          "integerValue": "119"
+        }
+      },
+      "createTime": "2025-08-22T21:21:47.412052Z",
+      "updateTime": "2025-08-22T21:21:47.412052Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/12",
+      "fields": {
+        "name": {
+          "stringValue": "عبدالحليم ادم"
+        },
+        "id": {
+          "integerValue": "12"
+        },
+        "specialization": {
+          "stringValue": "5"
+        },
+        "photoUrl": {
+          "stringValue": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQupVHd_oeqnkds0k3EjT1SX4ctwwblwYP2Uw&s"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-21T17:44:03.935397Z",
+      "updateTime": "2025-08-21T17:44:03.935397Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/120",
+      "fields": {
+        "name": {
+          "stringValue": "نازك احمد حسن"
+        },
+        "id": {
+          "integerValue": "120"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T21:22:01.444239Z",
+      "updateTime": "2025-08-22T21:22:01.444239Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/121",
+      "fields": {
+        "name": {
+          "stringValue": "ابراهيم تاتاي"
+        },
+        "id": {
+          "integerValue": "121"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T21:22:27.155178Z",
+      "updateTime": "2025-08-22T21:22:27.155178Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/122",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "لمياء المرضي"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "id": {
+          "integerValue": "122"
+        }
+      },
+      "createTime": "2025-08-22T21:22:45.767675Z",
+      "updateTime": "2025-08-22T21:22:45.767675Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/123",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "سلافه مكي"
+        },
+        "id": {
+          "integerValue": "123"
+        },
+        "specialization": {
+          "stringValue": "1"
+        }
+      },
+      "createTime": "2025-08-22T21:22:58.820587Z",
+      "updateTime": "2025-08-22T21:22:58.820587Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/124",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "عاطف سعد"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "id": {
+          "integerValue": "124"
+        }
+      },
+      "createTime": "2025-08-22T21:23:18.037416Z",
+      "updateTime": "2025-08-22T21:23:18.037416Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/125",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "ابوزيد السعيد"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "id": {
+          "integerValue": "125"
+        }
+      },
+      "createTime": "2025-08-22T21:23:33.445521Z",
+      "updateTime": "2025-08-22T21:23:33.445521Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/126",
+      "fields": {
+        "name": {
+          "stringValue": "امنه قاسم"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "id": {
+          "integerValue": "126"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T21:23:48.048591Z",
+      "updateTime": "2025-08-22T21:23:48.048591Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/127",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "عثمان حسونة"
+        },
+        "specialization": {
+          "stringValue": "4"
+        },
+        "id": {
+          "integerValue": "127"
+        }
+      },
+      "createTime": "2025-08-22T21:27:39.919307Z",
+      "updateTime": "2025-08-22T21:27:39.919307Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/128",
+      "fields": {
+        "name": {
+          "stringValue": "هبة اسامة"
+        },
+        "specialization": {
+          "stringValue": "2"
+        },
+        "id": {
+          "integerValue": "128"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T21:27:53.576408Z",
+      "updateTime": "2025-08-22T21:27:53.576408Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/129",
+      "fields": {
+        "name": {
+          "stringValue": "عبدالله الصادق"
+        },
+        "id": {
+          "integerValue": "129"
+        },
+        "specialization": {
+          "stringValue": "14"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T21:48:27.155991Z",
+      "updateTime": "2025-08-22T21:48:27.155991Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/13",
+      "fields": {
+        "name": {
+          "stringValue": "عامر عبدالرؤوف"
+        },
+        "id": {
+          "integerValue": "13"
+        },
+        "specialization": {
+          "stringValue": "4"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "photoUrl": {
+          "stringValue": "https://firebasestorage.googleapis.com/v0/b/hospitalapp-681f1.firebasestorage.app/o/doctors%2F1755838686764_scaled_1000114082.jpg?alt=media&token=6df937bd-26bb-4d36-8068-4d8fddb19d85"
+        }
+      },
+      "createTime": "2025-08-21T18:25:54.448551Z",
+      "updateTime": "2025-08-22T04:58:10.815983Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/130",
+      "fields": {
+        "name": {
+          "stringValue": "ندى صديق"
+        },
+        "specialization": {
+          "stringValue": "14"
+        },
+        "id": {
+          "integerValue": "130"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T21:48:41.523646Z",
+      "updateTime": "2025-08-22T21:48:41.523646Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/131",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "ياسر عمر"
+        },
+        "id": {
+          "integerValue": "131"
+        },
+        "specialization": {
+          "stringValue": "14"
+        }
+      },
+      "createTime": "2025-08-22T21:48:53.551576Z",
+      "updateTime": "2025-08-22T21:48:53.551576Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/132",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "عبدالله الصادق2"
+        },
+        "specialization": {
+          "stringValue": "14"
+        },
+        "id": {
+          "integerValue": "132"
+        }
+      },
+      "createTime": "2025-08-22T21:49:19.757483Z",
+      "updateTime": "2025-08-22T21:49:19.757483Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/133",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "علاءالدين"
+        },
+        "id": {
+          "integerValue": "133"
+        },
+        "specialization": {
+          "stringValue": "14"
+        }
+      },
+      "createTime": "2025-08-22T21:49:33.254529Z",
+      "updateTime": "2025-08-22T21:49:33.254529Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/134",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "ECHO"
+        },
+        "id": {
+          "integerValue": "134"
+        },
+        "specialization": {
+          "stringValue": "14"
+        }
+      },
+      "createTime": "2025-08-22T21:49:50.258893Z",
+      "updateTime": "2025-08-22T21:49:50.258893Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/135",
+      "fields": {
+        "name": {
+          "stringValue": "نجود"
+        },
+        "id": {
+          "integerValue": "135"
+        },
+        "specialization": {
+          "stringValue": "14"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T21:50:04.393704Z",
+      "updateTime": "2025-08-22T21:50:04.393704Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/136",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "حامد عبدالقادر"
+        },
+        "id": {
+          "integerValue": "136"
+        },
+        "specialization": {
+          "stringValue": "14"
+        }
+      },
+      "createTime": "2025-08-22T21:50:15.389242Z",
+      "updateTime": "2025-08-22T21:50:15.389242Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/137",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "هبه عصمت"
+        },
+        "id": {
+          "integerValue": "137"
+        },
+        "specialization": {
+          "stringValue": "14"
+        }
+      },
+      "createTime": "2025-08-22T21:58:35.516733Z",
+      "updateTime": "2025-08-22T21:58:35.516733Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/138",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "عامر صديق"
+        },
+        "id": {
+          "integerValue": "138"
+        },
+        "specialization": {
+          "stringValue": "16"
+        }
+      },
+      "createTime": "2025-08-22T22:00:26.510007Z",
+      "updateTime": "2025-08-22T22:00:26.510007Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/139",
+      "fields": {
+        "name": {
+          "stringValue": "يوسف احمد عبدالله"
+        },
+        "id": {
+          "integerValue": "139"
+        },
+        "specialization": {
+          "stringValue": "16"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T22:00:43.918473Z",
+      "updateTime": "2025-08-22T22:00:43.918473Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/14",
+      "fields": {
+        "photoUrl": {
+          "stringValue": "https://firebasestorage.googleapis.com/v0/b/hospitalapp-681f1.firebasestorage.app/o/doctors%2F1755800991992_scaled_1000114071.jpg?alt=media&token=81fb99ab-6f1a-441d-b315-e7ece610084f"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "specialization": {
+          "stringValue": "7"
+        },
+        "id": {
+          "integerValue": "14"
+        },
+        "name": {
+          "stringValue": "اسامه كامل"
+        }
+      },
+      "createTime": "2025-08-21T18:27:53.232952Z",
+      "updateTime": "2025-08-21T18:29:55.120567Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/140",
+      "fields": {
+        "name": {
+          "stringValue": "علي احمد يوسف"
+        },
+        "id": {
+          "integerValue": "140"
+        },
+        "specialization": {
+          "stringValue": "16"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T22:01:04.406964Z",
+      "updateTime": "2025-08-22T22:01:04.406964Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/141",
+      "fields": {
+        "name": {
+          "stringValue": "محمد المنصوري"
+        },
+        "id": {
+          "integerValue": "141"
+        },
+        "specialization": {
+          "stringValue": "16"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T22:01:22.687339Z",
+      "updateTime": "2025-08-22T22:01:22.687339Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/142",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "محمد عبدالمحمود"
+        },
+        "specialization": {
+          "stringValue": "16"
+        },
+        "id": {
+          "integerValue": "142"
+        }
+      },
+      "createTime": "2025-08-22T22:01:42.013328Z",
+      "updateTime": "2025-08-22T22:01:42.013328Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/143",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "ياسين عبدالله"
+        },
+        "id": {
+          "integerValue": "143"
+        },
+        "specialization": {
+          "stringValue": "16"
+        }
+      },
+      "createTime": "2025-08-22T22:02:00.834543Z",
+      "updateTime": "2025-08-22T22:02:00.834543Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/144",
+      "fields": {
+        "name": {
+          "stringValue": "عزالدين المدينه"
+        },
+        "specialization": {
+          "stringValue": "16"
+        },
+        "id": {
+          "integerValue": "144"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T22:02:15.688106Z",
+      "updateTime": "2025-08-22T22:02:15.688106Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/145",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "عبدالعزيز سيد سالم"
+        },
+        "specialization": {
+          "stringValue": "17"
+        },
+        "id": {
+          "integerValue": "145"
+        }
+      },
+      "createTime": "2025-08-22T22:09:46.826533Z",
+      "updateTime": "2025-08-22T22:09:46.826533Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/146",
+      "fields": {
+        "name": {
+          "stringValue": "فوزي عوض الكريم"
+        },
+        "specialization": {
+          "stringValue": "17"
+        },
+        "id": {
+          "integerValue": "146"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T22:10:10.902961Z",
+      "updateTime": "2025-08-22T22:10:10.902961Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/147",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "إيمان النو سكري"
+        },
+        "specialization": {
+          "stringValue": "18"
+        },
+        "id": {
+          "integerValue": "147"
+        }
+      },
+      "createTime": "2025-08-22T22:10:53.895092Z",
+      "updateTime": "2025-08-22T22:10:53.895092Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/148",
+      "fields": {
+        "name": {
+          "stringValue": "الفاضل علاءالدين"
+        },
+        "id": {
+          "integerValue": "148"
+        },
+        "specialization": {
+          "stringValue": "19"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T22:11:42.945548Z",
+      "updateTime": "2025-08-22T22:11:42.945548Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/149",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "specialization": {
+          "stringValue": "19"
+        },
+        "name": {
+          "stringValue": "منى عبدالرحمن"
+        },
+        "id": {
+          "integerValue": "149"
+        }
+      },
+      "createTime": "2025-08-22T22:12:20.286592Z",
+      "updateTime": "2025-08-22T22:18:41.404934Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/15",
+      "fields": {
+        "name": {
+          "stringValue": "محمد مروان"
+        },
+        "id": {
+          "integerValue": "15"
+        },
+        "specialization": {
+          "stringValue": "2"
+        },
+        "phoneNumber": {
+          "stringValue": "0912546684"
+        },
+        "photoUrl": {
+          "stringValue": "https://firebasestorage.googleapis.com/v0/b/hospitalapp-681f1.firebasestorage.app/o/doctors%2F1755809120741_scaled_1000188036.jpg?alt=media&token=94b1722f-5cd1-4010-8f1f-01f3e93dc46a"
+        }
+      },
+      "createTime": "2025-08-21T18:39:29.490771Z",
+      "updateTime": "2025-08-21T20:45:25.527885Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/150",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "رانيا طلحه"
+        },
+        "specialization": {
+          "stringValue": "19"
+        },
+        "id": {
+          "integerValue": "150"
+        }
+      },
+      "createTime": "2025-08-22T22:12:36.405414Z",
+      "updateTime": "2025-08-22T22:12:36.405414Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/151",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "طارق"
+        },
+        "specialization": {
+          "stringValue": "19"
+        },
+        "id": {
+          "integerValue": "151"
+        }
+      },
+      "createTime": "2025-08-22T22:12:46.858425Z",
+      "updateTime": "2025-08-22T22:12:46.858425Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/152",
+      "fields": {
+        "name": {
+          "stringValue": "عزه عوض الكريم"
+        },
+        "id": {
+          "integerValue": "152"
+        },
+        "specialization": {
+          "stringValue": "19"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T22:13:04.161404Z",
+      "updateTime": "2025-08-22T22:13:04.161404Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/153",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "جيهان اسماعيل"
+        },
+        "specialization": {
+          "stringValue": "19"
+        },
+        "id": {
+          "integerValue": "153"
+        }
+      },
+      "createTime": "2025-08-22T22:13:25.078596Z",
+      "updateTime": "2025-08-22T22:13:25.078596Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/154",
+      "fields": {
+        "name": {
+          "stringValue": "ابوبكر عبد الباقي"
+        },
+        "photoUrl": {
+          "stringValue": "https://firebasestorage.googleapis.com/v0/b/hospitalapp-681f1.firebasestorage.app/o/doctors%2F1756353302922_scaled_1000114064.jpg?alt=media&token=1f2add0e-4cc4-4323-aa01-8f83e24055a5"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "specialization": {
+          "stringValue": "16"
+        },
+        "id": {
+          "integerValue": "154"
+        }
+      },
+      "createTime": "2025-08-23T07:37:37.228656Z",
+      "updateTime": "2025-08-28T03:55:06.601568Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/155",
+      "fields": {
+        "photoUrl": {
+          "stringValue": "https://firebasestorage.googleapis.com/v0/b/hospitalapp-681f1.firebasestorage.app/o/doctors%2F1755953306068_scaled_1000114068.jpg?alt=media&token=922d7485-b07f-4a8c-9681-48b598c0da94"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "specialization": {
+          "stringValue": "16"
+        },
+        "id": {
+          "integerValue": "155"
+        },
+        "name": {
+          "stringValue": "حسام الدين عوض"
+        }
+      },
+      "createTime": "2025-08-23T07:37:56.743900Z",
+      "updateTime": "2025-08-23T12:48:30.421421Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/156",
+      "fields": {
+        "name": {
+          "stringValue": "صلاح حسن"
+        },
+        "id": {
+          "integerValue": "156"
+        },
+        "specialization": {
+          "stringValue": "16"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "photoUrl": {
+          "stringValue": "https://firebasestorage.googleapis.com/v0/b/hospitalapp-681f1.firebasestorage.app/o/doctors%2F1756026089848_scaled_1000115730.jpg?alt=media&token=aca5700b-65a7-410f-a638-201212e9f16e"
+        }
+      },
+      "createTime": "2025-08-23T07:38:07.531420Z",
+      "updateTime": "2025-08-24T09:01:34.093377Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/157",
+      "fields": {
+        "photoUrl": {
+          "stringValue": "https://firebasestorage.googleapis.com/v0/b/hospitalapp-681f1.firebasestorage.app/o/doctors%2F1756353258076_scaled_1000114062.jpg?alt=media&token=631dfee6-3347-4985-8ca0-5d282bdf8d3f"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "id": {
+          "integerValue": "157"
+        },
+        "name": {
+          "stringValue": "دفع الله الطيب"
+        }
+      },
+      "createTime": "2025-08-23T07:38:35.940460Z",
+      "updateTime": "2025-08-28T03:54:22.747203Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/158",
+      "fields": {
+        "name": {
+          "stringValue": "ساره السر"
+        },
+        "id": {
+          "integerValue": "158"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-23T07:38:46.725405Z",
+      "updateTime": "2025-08-23T07:38:46.725405Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/159",
+      "fields": {
+        "name": {
+          "stringValue": "يوسف ادم خليل"
+        },
+        "id": {
+          "integerValue": "159"
+        },
+        "specialization": {
+          "stringValue": "8"
+        },
+        "phoneNumber": {
+          "stringValue": "0912808905"
+        }
+      },
+      "createTime": "2025-08-23T12:49:15.574539Z",
+      "updateTime": "2025-08-23T12:49:15.574539Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/16",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "photoUrl": {
+          "stringValue": "https://firebasestorage.googleapis.com/v0/b/hospitalapp-681f1.firebasestorage.app/o/doctors%2F1755810714787_scaled_1000099734.jpg?alt=media&token=8cddff31-6b42-4652-869c-78ee88a0576b"
+        },
+        "id": {
+          "integerValue": "16"
+        },
+        "specialization": {
+          "stringValue": "8"
+        },
+        "name": {
+          "stringValue": "عزالدين المدينة"
+        }
+      },
+      "createTime": "2025-08-21T21:06:09.238344Z",
+      "updateTime": "2025-08-21T21:11:58.963437Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/160",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": "0918196866"
+        },
+        "name": {
+          "stringValue": "عباس حسن عباس حسن"
+        },
+        "id": {
+          "integerValue": "160"
+        },
+        "specialization": {
+          "stringValue": "5"
+        }
+      },
+      "createTime": "2025-08-23T12:51:32.432132Z",
+      "updateTime": "2025-08-23T12:51:32.432132Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/161",
+      "fields": {
+        "name": {
+          "stringValue": "دميانة روماني"
+        },
+        "id": {
+          "integerValue": "161"
+        },
+        "specialization": {
+          "stringValue": "4"
+        },
+        "phoneNumber": {
+          "stringValue": "0122691724"
+        }
+      },
+      "createTime": "2025-08-23T12:52:31.653499Z",
+      "updateTime": "2025-08-23T12:52:31.653499Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/162",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": "0123045697"
+        },
+        "name": {
+          "stringValue": "جعفر عبدالحميد الرفاعي"
+        },
+        "specialization": {
+          "stringValue": "7"
+        },
+        "id": {
+          "integerValue": "162"
+        }
+      },
+      "createTime": "2025-08-23T12:54:14.204025Z",
+      "updateTime": "2025-08-23T12:54:14.204025Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/163",
+      "fields": {
+        "name": {
+          "stringValue": "سامي جلال"
+        },
+        "id": {
+          "integerValue": "163"
+        },
+        "specialization": {
+          "stringValue": "20"
+        },
+        "phoneNumber": {
+          "stringValue": "09071790481"
+        }
+      },
+      "createTime": "2025-08-23T13:38:29.013657Z",
+      "updateTime": "2025-08-23T13:38:29.013657Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/164",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": "0122449190"
+        },
+        "name": {
+          "stringValue": "طلال جرقندي"
+        },
+        "id": {
+          "integerValue": "164"
+        },
+        "specialization": {
+          "stringValue": "21"
+        }
+      },
+      "createTime": "2025-08-23T13:39:26.223747Z",
+      "updateTime": "2025-08-23T13:39:26.223747Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/165",
+      "fields": {
+        "name": {
+          "stringValue": "نازك عبد العزيز"
+        },
+        "id": {
+          "integerValue": "165"
+        },
+        "specialization": {
+          "stringValue": "22"
+        },
+        "phoneNumber": {
+          "stringValue": "0922671725"
+        }
+      },
+      "createTime": "2025-08-23T13:43:18.959938Z",
+      "updateTime": "2025-08-23T13:43:18.959938Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/166",
+      "fields": {
+        "name": {
+          "stringValue": "احمد صالح عطا المنان"
+        },
+        "specialization": {
+          "stringValue": "23"
+        },
+        "id": {
+          "integerValue": "166"
+        },
+        "phoneNumber": {
+          "stringValue": "0904096716"
+        }
+      },
+      "createTime": "2025-08-23T13:44:27.465546Z",
+      "updateTime": "2025-08-23T13:44:27.465546Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/167",
+      "fields": {
+        "name": {
+          "stringValue": "عثمان احمد"
+        },
+        "specialization": {
+          "stringValue": "25"
+        },
+        "id": {
+          "integerValue": "167"
+        },
+        "phoneNumber": {
+          "stringValue": "000000000"
+        }
+      },
+      "createTime": "2025-08-23T13:46:41.884507Z",
+      "updateTime": "2025-08-23T13:46:41.884507Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/168",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": "0117035240"
+        },
+        "name": {
+          "stringValue": "نازك عبد الصادق"
+        },
+        "id": {
+          "integerValue": "168"
+        },
+        "specialization": {
+          "stringValue": "26"
+        }
+      },
+      "createTime": "2025-08-23T13:53:10.093830Z",
+      "updateTime": "2025-08-23T13:53:10.093830Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/169",
+      "fields": {
+        "name": {
+          "stringValue": "نجلاء محمد عباس"
+        },
+        "id": {
+          "integerValue": "169"
+        },
+        "specialization": {
+          "stringValue": "28"
+        },
+        "phoneNumber": {
+          "stringValue": "0912183668"
+        }
+      },
+      "createTime": "2025-08-23T13:53:59.648038Z",
+      "updateTime": "2025-08-23T13:53:59.648038Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/17",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "photoUrl": {
+          "stringValue": "https://firebasestorage.googleapis.com/v0/b/hospitalapp-681f1.firebasestorage.app/o/doctors%2F1756353332368_scaled_1000114076.jpg?alt=media&token=96c839c4-f7fb-4925-8f3c-248f5f269a5a"
+        },
+        "id": {
+          "integerValue": "17"
+        },
+        "specialization": {
+          "stringValue": "9"
+        },
+        "name": {
+          "stringValue": "خيري حسين خيري"
+        }
+      },
+      "createTime": "2025-08-22T04:59:58.822163Z",
+      "updateTime": "2025-08-28T03:55:36.034758Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/170",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": "0912326562"
+        },
+        "name": {
+          "stringValue": "محي الدين عبدالله"
+        },
+        "id": {
+          "integerValue": "170"
+        },
+        "specialization": {
+          "stringValue": "27"
+        }
+      },
+      "createTime": "2025-08-23T13:54:11.612444Z",
+      "updateTime": "2025-08-23T13:54:11.612444Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/171",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": "0121071407"
+        },
+        "name": {
+          "stringValue": "هاني فتحي على خليل"
+        },
+        "id": {
+          "integerValue": "171"
+        },
+        "specialization": {
+          "stringValue": "24"
+        }
+      },
+      "createTime": "2025-08-23T13:54:54.614489Z",
+      "updateTime": "2025-08-23T13:54:54.614489Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/172",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": "0912620687"
+        },
+        "name": {
+          "stringValue": "مبارك ادم على حمودة"
+        },
+        "id": {
+          "integerValue": "172"
+        },
+        "specialization": {
+          "stringValue": "29"
+        }
+      },
+      "createTime": "2025-08-23T13:56:10.904024Z",
+      "updateTime": "2025-08-23T13:56:10.904024Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/173",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": "0123557484"
+        },
+        "name": {
+          "stringValue": "محمد الامين"
+        },
+        "id": {
+          "integerValue": "173"
+        },
+        "specialization": {
+          "stringValue": "30"
+        }
+      },
+      "createTime": "2025-08-23T13:56:57.470004Z",
+      "updateTime": "2025-08-23T13:56:57.470004Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/174",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": "0121070875"
+        },
+        "name": {
+          "stringValue": "هاشم حسن ابو البشير"
+        },
+        "specialization": {
+          "stringValue": "30"
+        },
+        "id": {
+          "integerValue": "174"
+        }
+      },
+      "createTime": "2025-08-23T13:57:41.908220Z",
+      "updateTime": "2025-08-23T13:57:41.908220Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/175",
+      "fields": {
+        "name": {
+          "stringValue": "مروان محمد علي"
+        },
+        "specialization": {
+          "stringValue": "31"
+        },
+        "id": {
+          "integerValue": "175"
+        },
+        "phoneNumber": {
+          "stringValue": "000"
+        }
+      },
+      "createTime": "2025-08-23T13:58:32.698256Z",
+      "updateTime": "2025-08-23T13:58:32.698256Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/176",
+      "fields": {
+        "name": {
+          "stringValue": "عادل عبدالله محمد احمد"
+        },
+        "id": {
+          "integerValue": "176"
+        },
+        "specialization": {
+          "stringValue": "32"
+        },
+        "phoneNumber": {
+          "stringValue": "0917766644"
+        }
+      },
+      "createTime": "2025-08-23T13:59:14.826508Z",
+      "updateTime": "2025-08-23T13:59:14.826508Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/177",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": "0119511209"
+        },
+        "name": {
+          "stringValue": "محمد حامد الشاطر"
+        },
+        "id": {
+          "integerValue": "177"
+        },
+        "specialization": {
+          "stringValue": "12"
+        }
+      },
+      "createTime": "2025-08-23T13:59:41.786976Z",
+      "updateTime": "2025-08-23T13:59:41.786976Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/178",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": "0908992042"
+        },
+        "name": {
+          "stringValue": "مقداد احمد المصطفى احمد"
+        },
+        "id": {
+          "integerValue": "178"
+        },
+        "specialization": {
+          "stringValue": "33"
+        }
+      },
+      "createTime": "2025-08-23T14:00:20.494463Z",
+      "updateTime": "2025-08-23T14:00:20.494463Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/179",
+      "fields": {
+        "name": {
+          "stringValue": "النور اسماعيل تركة"
+        },
+        "id": {
+          "integerValue": "179"
+        },
+        "specialization": {
+          "stringValue": "34"
+        },
+        "phoneNumber": {
+          "stringValue": "0913329447"
+        }
+      },
+      "createTime": "2025-08-23T14:00:52.298473Z",
+      "updateTime": "2025-08-23T14:00:52.298473Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/18",
+      "fields": {
+        "name": {
+          "stringValue": "هند احمد المبارك"
+        },
+        "id": {
+          "integerValue": "18"
+        },
+        "specialization": {
+          "stringValue": "9"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T05:00:15.712267Z",
+      "updateTime": "2025-08-22T05:00:15.712267Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/180",
+      "fields": {
+        "name": {
+          "stringValue": "هبة سعيد على خير السيد"
+        },
+        "id": {
+          "integerValue": "180"
+        },
+        "specialization": {
+          "stringValue": "35"
+        },
+        "phoneNumber": {
+          "stringValue": "0125279621"
+        }
+      },
+      "createTime": "2025-08-23T14:02:35.922458Z",
+      "updateTime": "2025-08-23T14:02:35.922458Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/181",
+      "fields": {
+        "name": {
+          "stringValue": "الرفاعي سليمان بشير"
+        },
+        "id": {
+          "integerValue": "181"
+        },
+        "specialization": {
+          "stringValue": "36"
+        },
+        "phoneNumber": {
+          "stringValue": "0122122713"
+        }
+      },
+      "createTime": "2025-08-23T14:03:31.971002Z",
+      "updateTime": "2025-08-23T14:03:31.971002Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/182",
+      "fields": {
+        "name": {
+          "stringValue": "وائل محي الدين احمد"
+        },
+        "specialization": {
+          "stringValue": "37"
+        },
+        "id": {
+          "integerValue": "182"
+        },
+        "phoneNumber": {
+          "stringValue": "0124529752"
+        }
+      },
+      "createTime": "2025-08-23T14:04:32.798359Z",
+      "updateTime": "2025-08-23T14:04:32.798359Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/183",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": "0100669411"
+        },
+        "name": {
+          "stringValue": "ابو عبيدة عمر"
+        },
+        "specialization": {
+          "stringValue": "38"
+        },
+        "id": {
+          "integerValue": "183"
+        }
+      },
+      "createTime": "2025-08-23T14:07:07.474832Z",
+      "updateTime": "2025-08-23T14:07:07.474832Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/184",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "د.طيبة"
+        },
+        "id": {
+          "integerValue": "184"
+        },
+        "specialization": {
+          "stringValue": "19"
+        }
+      },
+      "createTime": "2025-08-23T20:57:56.121951Z",
+      "updateTime": "2025-08-23T20:57:56.121951Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/185",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "صالح يحي"
+        },
+        "specialization": {
+          "stringValue": "46"
+        },
+        "id": {
+          "integerValue": "185"
+        }
+      },
+      "createTime": "2025-08-24T17:33:53.863807Z",
+      "updateTime": "2025-08-24T17:33:53.863807Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/186",
+      "fields": {
+        "name": {
+          "stringValue": "معاذ حسين"
+        },
+        "specialization": {
+          "stringValue": "1"
+        },
+        "id": {
+          "integerValue": "186"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-24T17:35:16.009542Z",
+      "updateTime": "2025-08-24T17:35:16.009542Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/187",
+      "fields": {
+        "name": {
+          "stringValue": "ابوبكر عبدالباقى محمد"
+        },
+        "specialization": {
+          "stringValue": "16"
+        },
+        "id": {
+          "integerValue": "187"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-24T17:35:56.755439Z",
+      "updateTime": "2025-08-24T17:35:56.755439Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/188",
+      "fields": {
+        "phoneNumber": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "عثمان احمد"
+        },
+        "id": {
+          "integerValue": "188"
+        },
+        "specialization": {
+          "stringValue": "2"
+        }
+      },
+      "createTime": "2025-08-24T17:36:28.934072Z",
+      "updateTime": "2025-08-24T17:36:28.934072Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/allDoctors/189",
+      "fields": {
+        "name": {
+          "stringValue": "عبد الرحمن عبدالله"
+        },
+        "specialization": {
+          "stringValue": "36"
+        },
+        "id": {
+          "integerValue": "189"
+        },
+        "phoneNumber": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-24T17:37:22.005829Z",
+      "updateTime": "2025-08-24T17:37:22.005829Z"
+    }
+  ],
+  "nextPageToken": "AFTOeJwA91e-obMQ2HRlZDjyAt0CB0-LlLIVQnbsw8r2jVbqIJg33C7bKN5JDIum-bHkY1LhPROZU-LoS_UElZFXHOIfIF5TMOr4VWVjMxvPQJMY"
+}

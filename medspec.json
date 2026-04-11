@@ -1,0 +1,587 @@
+{
+  "documents": [
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/1",
+      "fields": {
+        "description": {
+          "stringValue": "تخصص في تشخيص وعلاج أمراض القلب والأوعية الدموية"
+        },
+        "id": {
+          "integerValue": "1"
+        },
+        "name": {
+          "stringValue": "أمراض القلب والشرايين"
+        }
+      },
+      "createTime": "2025-11-23T15:47:24.998723Z",
+      "updateTime": "2025-11-23T15:47:24.998723Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/10",
+      "fields": {
+        "description": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "عمومي"
+        },
+        "id": {
+          "integerValue": "10"
+        }
+      },
+      "createTime": "2025-08-22T14:18:03.797857Z",
+      "updateTime": "2025-08-22T14:18:03.797857Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/11",
+      "fields": {
+        "description": {
+          "stringValue": ""
+        },
+        "id": {
+          "integerValue": "11"
+        },
+        "name": {
+          "stringValue": "الطب النفسي"
+        }
+      },
+      "createTime": "2025-08-22T14:28:49.454037Z",
+      "updateTime": "2025-11-23T16:04:54.498434Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/12",
+      "fields": {
+        "description": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "قسم الأشعة"
+        },
+        "id": {
+          "integerValue": "12"
+        }
+      },
+      "createTime": "2025-08-22T14:29:18.331555Z",
+      "updateTime": "2025-11-23T16:16:14.449752Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/13",
+      "fields": {
+        "name": {
+          "stringValue": "التخدير"
+        },
+        "id": {
+          "integerValue": "13"
+        },
+        "description": {
+          "stringValue": "تخصص في التخدير والعناية المركزة"
+        }
+      },
+      "createTime": "2025-11-23T15:48:04.482400Z",
+      "updateTime": "2025-11-23T15:48:04.482400Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/14",
+      "fields": {
+        "name": {
+          "stringValue": "طب الطوارئ"
+        },
+        "id": {
+          "integerValue": "14"
+        },
+        "description": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T15:56:09.249432Z",
+      "updateTime": "2025-11-23T16:19:24.038658Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/15",
+      "fields": {
+        "name": {
+          "stringValue": "الطب النووي والعلاج الإشعاعي"
+        },
+        "id": {
+          "integerValue": "15"
+        },
+        "description": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T18:56:43.140777Z",
+      "updateTime": "2025-11-23T16:18:09.045150Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/16",
+      "fields": {
+        "description": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "العلاج الطبيعي"
+        },
+        "id": {
+          "integerValue": "16"
+        }
+      },
+      "createTime": "2025-08-22T22:00:06.074086Z",
+      "updateTime": "2025-11-23T16:12:19.388813Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/17",
+      "fields": {
+        "id": {
+          "integerValue": "17"
+        },
+        "name": {
+          "stringValue": "العمليه الصغرى"
+        },
+        "description": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T22:09:28.648421Z",
+      "updateTime": "2025-08-22T22:09:28.648421Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/18",
+      "fields": {
+        "name": {
+          "stringValue": "أطفال سكري"
+        },
+        "id": {
+          "integerValue": "18"
+        },
+        "description": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-22T22:10:34.518029Z",
+      "updateTime": "2025-08-22T22:10:34.518029Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/19",
+      "fields": {
+        "description": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "المسالك البولية"
+        },
+        "id": {
+          "integerValue": "19"
+        }
+      },
+      "createTime": "2025-08-22T22:11:21.884058Z",
+      "updateTime": "2025-11-23T16:12:38.513373Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/2",
+      "fields": {
+        "name": {
+          "stringValue": "الانف والاذن والحنجرة"
+        },
+        "description": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-19T10:00:30.426071Z",
+      "updateTime": "2025-11-23T16:31:06.919255Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/20",
+      "fields": {
+        "description": {
+          "stringValue": "تخصص في جراحة الجهاز العصبي"
+        },
+        "name": {
+          "stringValue": "جراحة المخ والأعصاب"
+        },
+        "id": {
+          "integerValue": "20"
+        }
+      },
+      "createTime": "2025-11-23T15:48:27.037216Z",
+      "updateTime": "2025-11-23T15:48:27.037216Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/21",
+      "fields": {
+        "description": {
+          "stringValue": "تخصص في تشخيص وعلاج أمراض الجهاز الهضمي"
+        },
+        "name": {
+          "stringValue": "أمراض الجهاز الهضمي"
+        },
+        "id": {
+          "integerValue": "21"
+        }
+      },
+      "createTime": "2025-11-23T15:54:14.073617Z",
+      "updateTime": "2025-11-23T15:54:14.073617Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/23",
+      "fields": {
+        "description": {
+          "stringValue": ""
+        },
+        "id": {
+          "integerValue": "23"
+        },
+        "name": {
+          "stringValue": "باطنيه"
+        }
+      },
+      "createTime": "2025-08-23T13:40:54.336633Z",
+      "updateTime": "2025-11-13T16:44:58.090987Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/24",
+      "fields": {
+        "description": {
+          "stringValue": "تخصص في تشخيص وعلاج أمراض الروماتيزم"
+        },
+        "id": {
+          "integerValue": "24"
+        },
+        "name": {
+          "stringValue": "أمراض الروماتيزم"
+        }
+      },
+      "createTime": "2025-11-23T15:54:25.957236Z",
+      "updateTime": "2025-11-23T15:54:25.957236Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/26",
+      "fields": {
+        "name": {
+          "stringValue": "أمراض الجهاز التنفسي"
+        },
+        "id": {
+          "integerValue": "26"
+        },
+        "description": {
+          "stringValue": "تخصص في تشخيص وعلاج أمراض الجهاز التنفسي"
+        }
+      },
+      "createTime": "2025-11-23T15:54:34.708808Z",
+      "updateTime": "2025-11-23T15:54:34.708808Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/27",
+      "fields": {
+        "name": {
+          "stringValue": "جراحة القلب والصدر"
+        },
+        "id": {
+          "integerValue": "27"
+        },
+        "description": {
+          "stringValue": "تخصص في جراحة القلب والصدر"
+        }
+      },
+      "createTime": "2025-11-23T15:54:38.851533Z",
+      "updateTime": "2025-11-23T15:54:38.851533Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/28",
+      "fields": {
+        "name": {
+          "stringValue": "أورام"
+        },
+        "id": {
+          "integerValue": "28"
+        },
+        "description": {
+          "stringValue": "تخصص في تشخيص وعلاج الأورام"
+        }
+      },
+      "createTime": "2025-11-23T15:54:42.997712Z",
+      "updateTime": "2025-11-23T15:54:42.997712Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/3",
+      "fields": {
+        "name": {
+          "stringValue": "جراحة العظام والمفاصل"
+        },
+        "id": {
+          "integerValue": "3"
+        },
+        "description": {
+          "stringValue": "تخصص في تشخيص وعلاج أمراض العظام والمفاصل"
+        }
+      },
+      "createTime": "2025-11-23T15:47:31.926144Z",
+      "updateTime": "2025-11-23T15:47:31.926144Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/30",
+      "fields": {
+        "description": {
+          "stringValue": "تخصص في رعاية وعلاج المسنين"
+        },
+        "name": {
+          "stringValue": "طب المسنين"
+        },
+        "id": {
+          "integerValue": "30"
+        }
+      },
+      "createTime": "2025-11-23T15:54:51.318523Z",
+      "updateTime": "2025-11-23T15:54:51.318523Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/38",
+      "fields": {
+        "id": {
+          "integerValue": "38"
+        },
+        "name": {
+          "stringValue": "المناظير"
+        },
+        "description": {
+          "stringValue": "استشاري"
+        }
+      },
+      "createTime": "2025-08-23T14:05:24.114707Z",
+      "updateTime": "2025-11-13T17:07:15.386339Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/39",
+      "fields": {
+        "id": {
+          "integerValue": "39"
+        },
+        "name": {
+          "stringValue": "قياس السمع"
+        },
+        "description": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-24T04:04:22.597449Z",
+      "updateTime": "2025-08-24T04:04:22.597449Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/4",
+      "fields": {
+        "description": {
+          "stringValue": "تخصص في تشخيص وعلاج أمراض الجلد"
+        },
+        "name": {
+          "stringValue": "أمراض الجلد"
+        },
+        "id": {
+          "integerValue": "4"
+        }
+      },
+      "createTime": "2025-11-23T15:47:35.089150Z",
+      "updateTime": "2025-11-23T15:47:35.089150Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/45",
+      "fields": {
+        "name": {
+          "stringValue": "السماعات الطبيه"
+        },
+        "id": {
+          "integerValue": "45"
+        },
+        "description": {
+          "stringValue": "قسم السماعات"
+        }
+      },
+      "createTime": "2025-08-24T09:21:34.559846Z",
+      "updateTime": "2025-08-24T09:21:34.559846Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/5",
+      "fields": {
+        "name": {
+          "stringValue": "طب الأطفال"
+        },
+        "id": {
+          "integerValue": "5"
+        },
+        "description": {
+          "stringValue": "تخصص في رعاية وعلاج الأطفال"
+        }
+      },
+      "createTime": "2025-11-23T15:47:38.285086Z",
+      "updateTime": "2025-11-23T15:47:38.285086Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/52",
+      "fields": {
+        "id": {
+          "integerValue": "52"
+        },
+        "name": {
+          "stringValue": "العلاج التحفظي"
+        },
+        "description": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-24T20:40:22.979262Z",
+      "updateTime": "2025-08-24T21:25:38.793942Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/56",
+      "fields": {
+        "description": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "ENT"
+        },
+        "id": {
+          "integerValue": "56"
+        }
+      },
+      "createTime": "2025-08-24T23:37:06.421416Z",
+      "updateTime": "2025-08-24T23:37:06.421416Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/62",
+      "fields": {
+        "description": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "كشف النظر"
+        },
+        "id": {
+          "integerValue": "62"
+        }
+      },
+      "createTime": "2025-08-27T04:48:31.817004Z",
+      "updateTime": "2025-08-27T04:48:31.817004Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/64",
+      "fields": {
+        "name": {
+          "stringValue": "طب الأسرة"
+        },
+        "id": {
+          "integerValue": "64"
+        },
+        "description": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-29T18:24:07.207751Z",
+      "updateTime": "2025-08-29T18:24:07.207751Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/67",
+      "fields": {
+        "description": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "تخطيط المخ"
+        },
+        "id": {
+          "integerValue": "67"
+        }
+      },
+      "createTime": "2025-08-29T18:54:56.741347Z",
+      "updateTime": "2025-08-29T18:54:56.741347Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/69",
+      "fields": {
+        "description": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "الموجات الصوتيه"
+        },
+        "id": {
+          "integerValue": "69"
+        }
+      },
+      "createTime": "2025-08-30T12:25:14.423447Z",
+      "updateTime": "2025-08-30T12:25:14.423447Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/7",
+      "fields": {
+        "name": {
+          "stringValue": "الجراحة العامة"
+        }
+      },
+      "createTime": "2025-08-19T12:16:34.041513Z",
+      "updateTime": "2025-08-19T12:38:46.785833Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/75",
+      "fields": {
+        "description": {
+          "stringValue": ""
+        },
+        "id": {
+          "integerValue": "75"
+        },
+        "name": {
+          "stringValue": "استشاري العيون"
+        }
+      },
+      "createTime": "2025-09-06T22:33:51.064321Z",
+      "updateTime": "2025-09-06T22:33:51.064321Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/76",
+      "fields": {
+        "description": {
+          "stringValue": ""
+        },
+        "name": {
+          "stringValue": "EEG"
+        },
+        "id": {
+          "integerValue": "76"
+        }
+      },
+      "createTime": "2025-09-06T22:40:05.952062Z",
+      "updateTime": "2025-09-06T22:40:05.952062Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/77",
+      "fields": {
+        "name": {
+          "stringValue": "الفم والأسنان"
+        },
+        "id": {
+          "integerValue": "77"
+        },
+        "description": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-11-23T16:39:54.133688Z",
+      "updateTime": "2025-11-23T16:39:54.133688Z"
+    },
+    {
+      "name": "projects/hospitalapp-681f1/databases/(default)/documents/medicalSpecialties/9",
+      "fields": {
+        "id": {
+          "integerValue": "9"
+        },
+        "name": {
+          "stringValue": "النساء و التوليد"
+        },
+        "description": {
+          "stringValue": ""
+        }
+      },
+      "createTime": "2025-08-21T21:51:35.615992Z",
+      "updateTime": "2025-08-21T21:51:35.615992Z"
+    }
+  ]
+}
