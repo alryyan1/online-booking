@@ -2,6 +2,7 @@ export const ROLES = {
   SUPER_ADMIN: 'superadmin',
   FACILITY_ADMIN: 'facilityadmin',
   PATIENT: 'patient',
+  CALL_CENTER: 'callcenter',
 }
 
 export const SUPER_ADMIN_EMAILS = [

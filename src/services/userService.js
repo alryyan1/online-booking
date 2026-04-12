@@ -21,10 +21,21 @@ export const getUsersByFacility = async (facilityId) => {
 }
 
 export const createFacilityUser = (data) =>
-  addDoc(ref(), { ...data, createdAt: serverTimestamp() })
+  addDoc(ref(), {
+    ...data,
+    isOnline: false,
+    photoUrl: '',
+    lastLoginAt: serverTimestamp(),
+    lastSeenAt: serverTimestamp(),
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  })
 
 export const updateFacilityUser = (userId, data) =>
-  updateDoc(doc(db, COLLECTIONS.USERS, userId), data)
+  updateDoc(doc(db, COLLECTIONS.USERS, userId), {
+    ...data,
+    updatedAt: serverTimestamp(),
+  })
 
 export const deleteFacilityUser = (userId) =>
   deleteDoc(doc(db, COLLECTIONS.USERS, userId))

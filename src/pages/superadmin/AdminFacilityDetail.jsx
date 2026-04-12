@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { formatDate } from '../../utils/bookingUtils'
 import {
   getFacilityById,
   getSpecializations,
@@ -550,6 +551,15 @@ const SpecializationsTab = ({ facilityId }) => {
 const AppointmentsTab = ({ facilityId }) => {
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('today')
+
+  // Filter states
+  const [patientSearch, setPatientSearch] = useState('')
+  const [doctorSearch, setDoctorSearch] = useState('')
+  const [dateFilter, setDateFilter] = useState('')
+  const [periodFilter, setPeriodFilter] = useState('all') // 'all', 'morning', 'evening'
+
+  const todayStr = formatDate(new Date())
 
   useEffect(() => {
     getAppointments(facilityId)
@@ -558,46 +568,221 @@ const AppointmentsTab = ({ facilityId }) => {
       .finally(() => setLoading(false))
   }, [facilityId])
 
+  // Multi-step filtering
+  const filteredAppointments = appointments.filter((apt) => {
+    // 1. Tab Filter
+    if (activeTab === 'today' && apt.date !== todayStr) return false
+
+    // 2. Date Filter (Custom)
+    if (dateFilter && apt.date !== dateFilter) return false
+
+    // 3. Period Filter
+    if (periodFilter !== 'all' && apt.period !== periodFilter) return false
+
+    // 4. Patient Search
+    if (patientSearch.trim()) {
+      const search = patientSearch.toLowerCase()
+      const matchesPatient = apt.patientName?.toLowerCase().includes(search)
+      const matchesPhone = apt.patientPhone?.includes(search)
+      if (!matchesPatient && !matchesPhone) return false
+    }
+
+    // 5. Doctor/Spec Search
+    if (doctorSearch.trim()) {
+      const search = doctorSearch.toLowerCase()
+      const matchesDoctor = apt.doctorName?.toLowerCase().includes(search)
+      const matchesSpec = apt.specializationName?.toLowerCase().includes(search)
+      if (!matchesDoctor && !matchesSpec) return false
+    }
+
+    return true
+  })
+
+  // Counts for the summary
+  const counts = {
+    today: appointments.filter(apt => apt.date === todayStr).length,
+    all: appointments.length,
+    filtered: filteredAppointments.length
+  }
+
+  const clearFilters = () => {
+    setPatientSearch('')
+    setDoctorSearch('')
+    setDateFilter('')
+    setPeriodFilter('all')
+  }
+
   if (loading) return <Spinner size="lg" className="py-16" />
 
-  if (appointments.length === 0) return (
-    <div className="text-center text-gray-400 py-16 bg-white rounded-2xl border border-gray-100">
-      <div className="text-5xl mb-3">📅</div>
-      <p>لا توجد مواعيد بعد</p>
-    </div>
-  )
-
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <p className="px-5 py-3 text-sm text-gray-500 border-b">{appointments.length} موعد</p>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600 text-right">
-            <tr>
-              <th className="px-5 py-3 font-medium">المريض</th>
-              <th className="px-5 py-3 font-medium hidden sm:table-cell">الطبيب</th>
-              <th className="px-5 py-3 font-medium hidden md:table-cell">التاريخ</th>
-              <th className="px-5 py-3 font-medium hidden md:table-cell">الوقت</th>
-              <th className="px-5 py-3 font-medium hidden lg:table-cell">التأمين</th>
-              <th className="px-5 py-3 font-medium">الحالة</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {appointments.map((apt) => (
-              <tr key={apt.id} className="hover:bg-gray-50">
-                <td className="px-5 py-3 font-medium text-gray-800">{apt.patientName || '-'}</td>
-                <td className="px-5 py-3 text-gray-600 hidden sm:table-cell">{apt.doctorName || '-'}</td>
-                <td className="px-5 py-3 text-gray-600 hidden md:table-cell" dir="ltr">{apt.date || '-'}</td>
-                <td className="px-5 py-3 text-gray-600 hidden md:table-cell" dir="ltr">{apt.timeSlot || '-'}</td>
-                <td className="px-5 py-3 text-gray-500 hidden lg:table-cell">{apt.insurance || '-'}</td>
-                <td className="px-5 py-3">
-                  <AppointmentStatusBadge status={apt.status} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="space-y-6">
+      {/* Filter Toolbar */}
+      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-5 text-right">
+        <div className="flex flex-col xl:flex-row gap-4 items-center justify-between">
+
+          {/* Tab Switcher */}
+          <div className="flex gap-1 bg-gray-50 p-1 rounded-xl w-full xl:w-fit flex-row-reverse">
+            <button
+              onClick={() => { setActiveTab('today'); setDateFilter('') }}
+              className={`flex-1 xl:px-5 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'today' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                }`}
+            >
+              مواعيد اليوم ({counts.today})
+            </button>
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`flex-1 xl:px-5 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'all' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                }`}
+            >
+              جميع المواعيد ({counts.all})
+            </button>
+          </div>
+
+          {/* Search & Date Controls */}
+          <div className="flex flex-col sm:flex-row gap-2 w-full xl:flex-1 xl:justify-end flex-wrap">
+            {/* Patient Search */}
+            <div className="relative sm:flex-1 w-full">
+              <input
+                type="text"
+                placeholder="اسم المريض أو الهاتف..."
+                value={patientSearch}
+                onChange={(e) => setPatientSearch(e.target.value)}
+                className="w-full text-right bg-gray-50 border border-gray-100 rounded-xl pl-3 pr-9 py-2 text-sm focus:outline-none focus:border-purple-500 focus:bg-white transition-all"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">👤</span>
+            </div>
+
+            {/* Doctor Search */}
+            <div className="relative sm:flex-1 w-full">
+              <input
+                type="text"
+                placeholder="الطبيب أو التخصص..."
+                value={doctorSearch}
+                onChange={(e) => setDoctorSearch(e.target.value)}
+                className="w-full text-right bg-gray-50 border border-gray-100 rounded-xl pl-3 pr-9 py-2 text-sm focus:outline-none focus:border-purple-500 focus:bg-white transition-all"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">👨‍⚕️</span>
+            </div>
+
+            {/* Period Filter Toggle */}
+            <div className="flex gap-1 bg-gray-50 p-1 rounded-xl w-full sm:w-auto flex-row-reverse">
+              <button
+                onClick={() => setPeriodFilter('all')}
+                className={`flex-1 sm:px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${periodFilter === 'all' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+              >
+                الكل
+              </button>
+              <button
+                onClick={() => setPeriodFilter('morning')}
+                className={`flex-1 sm:px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 justify-center ${periodFilter === 'morning' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+              >
+                <span>صباحاً</span>
+              </button>
+              <button
+                onClick={() => setPeriodFilter('evening')}
+                className={`flex-1 sm:px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 justify-center ${periodFilter === 'evening' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+              >
+                <span>مساءً</span>
+              </button>
+            </div>
+
+            {/* Date Filter */}
+            <div className="relative w-full sm:w-auto">
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => {
+                  setDateFilter(e.target.value)
+                  if (e.target.value) setActiveTab('all')
+                }}
+                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-500 focus:bg-white transition-all font-medium text-gray-700"
+              />
+            </div>
+
+            {/* Reset Button */}
+            {(patientSearch || doctorSearch || dateFilter || periodFilter !== 'all') && (
+              <button
+                onClick={clearFilters}
+                className="bg-red-50 text-red-500 px-3 py-2 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors"
+                title="إعادة ضبط الفلاتر"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Results summary bar */}
+        {(patientSearch || doctorSearch || dateFilter || periodFilter !== 'all') && (
+          <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+            <span className="text-xs font-bold text-gray-400">نتائج البحث: <span className="text-purple-600">{counts.filtered}</span> موعد</span>
+            <div className="flex gap-2">
+              {periodFilter !== 'all' && (
+                <span className={`px-2 py-1 rounded-lg text-[10px] font-bold ${periodFilter === 'morning' ? 'bg-orange-50 text-orange-600' : 'bg-indigo-50 text-indigo-600'
+                  }`}>
+                  {periodFilter === 'morning' ? '☀️ صباحاً' : '🌙 مساءً'}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
+      {filteredAppointments.length === 0 ? (
+        <div className="text-center text-gray-400 py-24 bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="text-5xl mb-4 opacity-20">🔎</div>
+          <p className="text-lg font-bold">لا توجد مواعيد تطابق بحثك</p>
+          {(patientSearch || doctorSearch || dateFilter || periodFilter !== 'all') && (
+            <button onClick={clearFilters} className="mt-3 text-purple-600 font-bold hover:underline text-sm">عرض جميع المواعيد ←</button>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-right">
+              <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
+                <tr>
+                  <th className="px-6 py-4 font-bold text-xs text-right">المريض</th>
+                  <th className="px-6 py-4 font-bold text-xs hidden sm:table-cell text-right">الطبيب</th>
+                  <th className="px-6 py-4 font-bold text-xs hidden md:table-cell text-right">التاريخ</th>
+                  <th className="px-6 py-4 font-bold text-xs hidden md:table-cell text-right">الوقت</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filteredAppointments.map((apt) => (
+                  <tr key={apt.id} className="hover:bg-purple-50/10 transition-all group">
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-gray-800 group-hover:text-purple-700 transition-colors">{apt.patientName || '-'}</div>
+                      <div className="text-xs text-purple-500 mt-0.5" dir="ltr">{apt.patientPhone || '-'}</div>
+                    </td>
+                    <td className="px-6 py-4 hidden sm:table-cell">
+                      <div className="font-bold text-gray-700 text-sm">{apt.doctorName || '-'}</div>
+                      <div className="text-[10px] text-gray-400 font-bold mt-0.5 uppercase">{apt.specializationName || '-'}</div>
+                    </td>
+                    <td className="px-6 py-4 hidden md:table-cell">
+                      <div className={`px-3 py-1.5 rounded-lg text-[11px] font-bold inline-block ${apt.date === todayStr ? 'bg-red-50 text-red-600 ring-1 ring-red-100' : 'bg-gray-50 text-gray-600'}`} dir="ltr">
+                        {apt.date || '-'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 hidden md:table-cell">
+                      <div className="flex flex-col items-start gap-1">
+                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${apt.period === 'morning' ? 'bg-orange-50 text-orange-600' : 'bg-indigo-50 text-indigo-600'
+                          }`}>
+                          {apt.period === 'morning' ? 'صباحاً' : apt.period === 'evening' ? 'مساءً' : '-'}
+                        </span>
+                        <span className="font-bold text-gray-900 text-xs" dir="ltr">{apt.time || apt.timeSlot || '-'}</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -613,6 +798,9 @@ const InsuranceTab = ({ facilityId }) => {
   const [editTarget, setEditTarget] = useState(null)
   const [form, setForm] = useState(INS_EMPTY)
   const [saving, setSaving] = useState(false)
+
+  // Filter state
+  const [searchTerm, setSearchTerm] = useState('')
 
   const load = async () => {
     setLoading(true)
@@ -677,59 +865,112 @@ const InsuranceTab = ({ facilityId }) => {
     }
   }
 
+  const filteredCompanies = companies.filter((c) =>
+    c.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
   if (loading) return <Spinner size="lg" className="py-16" />
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-500">{companies.length} شركة تأمين</p>
-        <button onClick={openAdd} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
-          + إضافة شركة
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">شركات التأمين</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{companies.length} شركة مسجلة للمركز</p>
+        </div>
+        <button
+          onClick={openAdd}
+          className="bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition shadow-sm font-bold text-sm flex items-center gap-2 justify-center"
+        >
+          <span>🛡️+</span>
+          إضافة شركة تأمين
         </button>
       </div>
 
-      {companies.length === 0 ? (
-        <div className="text-center text-gray-400 py-16 bg-white rounded-2xl border border-gray-100">
-          <div className="text-5xl mb-3">🛡️</div>
-          <p>لا توجد شركات تأمين بعد</p>
+      {/* Toolbar */}
+      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="relative group">
+          <input
+            type="text"
+            placeholder="ابحث باسم شركة التأمين..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full text-right bg-gray-50 border border-gray-100 rounded-xl pl-4 pr-10 py-2.5 text-sm focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-medium"
+          />
+          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors">🔍</span>
+        </div>
+      </div>
+
+      {filteredCompanies.length === 0 ? (
+        <div className="text-center text-gray-400 py-32 bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="text-6xl mb-4 opacity-20">🛡️</div>
+          <p className="text-lg font-bold">لا توجد نتائج تطابق بحثك</p>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="mt-3 text-blue-600 font-bold hover:underline"
+            >
+              عرض جميع الشركات ←
+            </button>
+          )}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600 text-right">
-              <tr>
-                <th className="px-5 py-3 font-medium">الشركة</th>
-                <th className="px-5 py-3 font-medium hidden sm:table-cell">الهاتف</th>
-                <th className="px-5 py-3 font-medium hidden md:table-cell">الوصف</th>
-                <th className="px-5 py-3 font-medium">الحالة</th>
-                <th className="px-5 py-3 font-medium">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {companies.map((c) => (
-                <tr key={c.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3 font-medium text-gray-800">{c.name}</td>
-                  <td className="px-5 py-3 text-gray-500 hidden sm:table-cell" dir="ltr">{c.phone || '-'}</td>
-                  <td className="px-5 py-3 text-gray-500 hidden md:table-cell max-w-[180px] truncate">{c.description || '-'}</td>
-                  <td className="px-5 py-3">
-                    <button
-                      onClick={() => handleToggle(c)}
-                      className={`text-xs px-2.5 py-1 rounded-full font-medium transition
-                        ${c.enabled !== false ? 'bg-teal-100 text-teal-700 hover:bg-teal-200' : 'bg-orange-100 text-orange-600 hover:bg-orange-200'}`}
-                    >
-                      {c.enabled !== false ? 'مفعل' : 'معطل'}
-                    </button>
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex gap-3">
-                      <button onClick={() => openEdit(c)} className="text-blue-600 hover:text-blue-800 text-xs font-medium">تعديل</button>
-                      <button onClick={() => handleDelete(c)} className="text-red-500 hover:text-red-700 text-xs font-medium">حذف</button>
-                    </div>
-                  </td>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-500">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-right">
+              <thead className="bg-gray-50/80 text-gray-500 border-b border-gray-100">
+                <tr>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider text-right">الشركة</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider hidden sm:table-cell text-right">التواصل</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider hidden md:table-cell text-right">الوصف</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider text-right">الحالة</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider text-right">إجراءات</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filteredCompanies.map((c) => (
+                  <tr key={c.id} className="hover:bg-blue-50/10 transition-all group">
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-gray-800 group-hover:text-blue-700 transition-colors">{c.name}</div>
+                    </td>
+                    <td className="px-6 py-4 hidden sm:table-cell">
+                      <div className="font-medium text-gray-600 font-mono text-xs" dir="ltr">{c.phone || '-'}</div>
+                    </td>
+                    <td className="px-6 py-4 hidden md:table-cell max-w-[200px]">
+                      <div className="text-xs text-gray-500 truncate" title={c.description}>{c.description || '-'}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleToggle(c)}
+                        className={`text-[10px] px-2.5 py-1 rounded-lg font-black uppercase tracking-wider transition shadow-sm
+                          ${c.enabled !== false ? 'bg-teal-50 text-teal-700 hover:bg-teal-100' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'}`}
+                      >
+                        {c.enabled !== false ? 'مفعل' : 'معطل'}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEdit(c)}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="تعديل"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          onClick={() => handleDelete(c)}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
+                          title="حذف"
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -768,7 +1009,7 @@ const InsuranceTab = ({ facilityId }) => {
 
 // ─── Users Tab ─────────────────────────────────────────────────────────────────
 
-const USER_EMPTY = { userName: '', userPhone: '', userPassword: '', userType: 'user' }
+const USER_EMPTY = { userName: '', userPhone: '', userPassword: '', userType: 'admin' }
 
 const UsersTab = ({ facilityId, facilityName }) => {
   const [users, setUsers] = useState([])
@@ -777,6 +1018,10 @@ const UsersTab = ({ facilityId, facilityName }) => {
   const [editTarget, setEditTarget] = useState(null)
   const [form, setForm] = useState(USER_EMPTY)
   const [saving, setSaving] = useState(false)
+
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('')
+  const [typeFilter, setTypeFilter] = useState('all')
 
   const load = async () => {
     setLoading(true)
@@ -797,7 +1042,7 @@ const UsersTab = ({ facilityId, facilityName }) => {
 
   const openAdd = () => { setForm(USER_EMPTY); setEditTarget(null); setModal(true) }
   const openEdit = (u) => {
-    setForm({ userName: u.userName || '', userPhone: u.userPhone || '', userPassword: '', userType: u.userType || 'user' })
+    setForm({ userName: u.userName || '', userPhone: u.userPhone || '', userPassword: '', userType: u.userType || 'admin' })
     setEditTarget(u)
     setModal(true)
   }
@@ -844,66 +1089,145 @@ const UsersTab = ({ facilityId, facilityName }) => {
     }
   }
 
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch = u.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.userPhone?.includes(searchTerm)
+    const matchesType = typeFilter === 'all' || u.userType === typeFilter
+    return matchesSearch && matchesType
+  })
+
   if (loading) return <Spinner size="lg" className="py-16" />
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-500">{users.length} مستخدم</p>
-        <button onClick={openAdd} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition text-sm font-medium">
-          + إضافة مستخدم
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">إدارة المستخدمين</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{users.length} مستخدم مسجل للمركز</p>
+        </div>
+        <button
+          onClick={openAdd}
+          className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition shadow-sm font-bold text-sm flex items-center gap-2 justify-center"
+        >
+          <span>👤+</span>
+          إضافة مستخدم جديد
         </button>
       </div>
 
-      {users.length === 0 ? (
-        <div className="text-center text-gray-400 py-16 bg-white rounded-2xl border border-gray-100">
-          <div className="text-5xl mb-3">👤</div>
-          <p>لا يوجد مستخدمون بعد</p>
+      {/* Toolbar */}
+      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 group">
+          <input
+            type="text"
+            placeholder="ابحث بالاسم أو رقم الهاتف..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full text-right bg-gray-50 border border-gray-100 rounded-xl pl-4 pr-10 py-2.5 text-sm focus:outline-none focus:border-indigo-600 focus:bg-white transition-all font-medium"
+          />
+          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors">🔍</span>
+        </div>
+
+        <div className="flex bg-gray-100 p-1 rounded-xl flex-row-reverse overflow-x-auto scrollbar-hide">
+          {['all', 'admin', 'doctor', 'callCenter', 'reception'].map((type) => (
+            <button
+              key={type}
+              onClick={() => setTypeFilter(type)}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${typeFilter === type ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+            >
+              {type === 'all' ? 'الكل' : type}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {filteredUsers.length === 0 ? (
+        <div className="text-center text-gray-400 py-32 bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="text-6xl mb-4 opacity-20">👥</div>
+          <p className="text-lg font-bold">لا توجد نتائج تطابق بحثك</p>
+          {(searchTerm || typeFilter !== 'all') && (
+            <button
+              onClick={() => { setSearchTerm(''); setTypeFilter('all') }}
+              className="mt-3 text-indigo-600 font-bold hover:underline"
+            >
+              إعادة تعيين الفلاتر ←
+            </button>
+          )}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600 text-right">
-              <tr>
-                <th className="px-5 py-3 font-medium">المستخدم</th>
-                <th className="px-5 py-3 font-medium hidden sm:table-cell">الهاتف</th>
-                <th className="px-5 py-3 font-medium hidden md:table-cell">النوع</th>
-                <th className="px-5 py-3 font-medium hidden md:table-cell">الحالة</th>
-                <th className="px-5 py-3 font-medium">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {users.map((u) => (
-                <tr key={u.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-lg flex-shrink-0 overflow-hidden">
-                        {u.photoUrl
-                          ? <img src={u.photoUrl} alt={u.userName} className="w-full h-full object-cover rounded-full" />
-                          : '👤'}
-                      </div>
-                      <p className="font-medium text-gray-800">{u.userName}</p>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3 text-gray-500 hidden sm:table-cell" dir="ltr">{u.userPhone || '-'}</td>
-                  <td className="px-5 py-3 hidden md:table-cell">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">{u.userType || '-'}</span>
-                  </td>
-                  <td className="px-5 py-3 hidden md:table-cell">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${u.isOnline ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {u.isOnline ? 'متصل' : 'غير متصل'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex gap-3">
-                      <button onClick={() => openEdit(u)} className="text-blue-600 hover:text-blue-800 text-xs font-medium">تعديل</button>
-                      <button onClick={() => handleDelete(u)} className="text-red-500 hover:text-red-700 text-xs font-medium">حذف</button>
-                    </div>
-                  </td>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-500">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-right">
+              <thead className="bg-gray-50/80 text-gray-500 border-b border-gray-100">
+                <tr>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider text-right">المستخدم</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider hidden sm:table-cell text-right">التواصل</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider hidden md:table-cell text-right">النوع</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider hidden md:table-cell text-right">آخر ظهور</th>
+                  <th className="px-6 py-4 font-bold text-xs uppercase tracking-wider text-right">إجراءات</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filteredUsers.map((u) => (
+                  <tr key={u.id} className="hover:bg-indigo-50/10 transition-all group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-xl flex-shrink-0 overflow-hidden ring-2 ring-transparent group-hover:ring-indigo-100 transition-all">
+                          {u.photoUrl
+                            ? <img src={u.photoUrl} alt={u.userName} className="w-full h-full object-cover" />
+                            : '👤'}
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-800">{u.userName}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className={`w-2 h-2 rounded-full ${u.isOnline ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                            <span className="text-[10px] text-gray-400 font-medium">{u.isOnline ? 'متصل الآن' : 'غير متصل'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 hidden sm:table-cell">
+                      <div className="font-medium text-gray-700 font-mono text-xs" dir="ltr">{u.userPhone || '-'}</div>
+                    </td>
+                    <td className="px-6 py-4 hidden md:table-cell">
+                      <span className={`text-[10px] px-2.5 py-1 rounded-lg font-black uppercase tracking-wider shadow-sm
+                        ${u.userType === 'admin' ? 'bg-red-50 text-red-600' :
+                          u.userType === 'doctor' ? 'bg-blue-50 text-blue-600' :
+                            u.userType === 'callCenter' ? 'bg-purple-50 text-purple-600' :
+                              'bg-amber-50 text-amber-600'}`}>
+                        {u.userType}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 hidden md:table-cell">
+                      <div className="text-[11px] text-gray-500 font-medium">
+                        {u.lastSeenAt?.toDate ? (
+                          new Date(u.lastSeenAt.toDate()).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+                        ) : 'غير متوفر'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEdit(u)}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="تعديل"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          onClick={() => handleDelete(u)}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
+                          title="حذف"
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -923,8 +1247,10 @@ const UsersTab = ({ facilityId, facilityName }) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">نوع المستخدم</label>
             <select name="userType" value={form.userType} onChange={handleField}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
-              <option value="user">user</option>
-              <option value="admin">admin</option>
+              <option value="admin">Admin</option>
+              <option value="doctor">Doctor</option>
+              <option value="callCenter">Call Center</option>
+              <option value="reception">Reception</option>
             </select>
           </div>
           <div>
@@ -984,24 +1310,39 @@ const AdminFacilityDetail = () => {
         ← العودة إلى المرافق
       </Link>
 
-      {/* Facility header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-        <div className="h-36 bg-gradient-to-br from-blue-100 to-indigo-200">
-          {facility.imageUrl && (
-            <img src={facility.imageUrl} alt={facility.name} className="w-full h-full object-cover" />
-          )}
-        </div>
-        <div className="px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-gray-800">{facility.name}</h1>
-              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${facility.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+      {/* Compact Facility header */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-4 mb-6 transition-all">
+        <div className="flex items-center gap-5">
+          {/* Facility Avatar */}
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-gray-100 flex items-center justify-center text-3xl flex-shrink-0 overflow-hidden shadow-sm">
+            {facility.imageUrl ? (
+              <img src={facility.imageUrl} alt={facility.name} className="w-full h-full object-cover" />
+            ) : (
+              '🏥'
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <h1 className="text-xl font-black text-gray-800 tracking-tight">{facility.name}</h1>
+              <span className={`text-[10px] px-2 py-0.5 rounded-lg font-bold shadow-sm transition-colors ${facility.available ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
                 {facility.available ? 'نشط' : 'معطل'}
               </span>
             </div>
-            <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-500">
-              {facility.address && <span>📍 {facility.address}</span>}
-              {facility.phone && <span dir="ltr">📞 {facility.phone}</span>}
+            
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs font-medium text-gray-400">
+              {facility.address && (
+                <div className="flex items-center gap-1">
+                  <span>📍</span>
+                  <span className="truncate">{facility.address}</span>
+                </div>
+              )}
+              {facility.phone && (
+                <div className="flex items-center gap-1" dir="ltr">
+                  <span>📞</span>
+                  <span>{facility.phone}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -9,7 +9,7 @@ const Login = () => {
   const { login, userRole } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm] = useState({ identifier: '', password: '' })
   const [loading, setLoading] = useState(false)
 
   const from = location.state?.from?.pathname || '/'
@@ -19,21 +19,21 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.email || !form.password) {
+    if (!form.identifier || !form.password) {
       toast.error('يرجى ملء جميع الحقول')
       return
     }
     setLoading(true)
     try {
-      await login(form.email, form.password)
+      await login(form.identifier, form.password)
       toast.success('تم تسجيل الدخول بنجاح')
       // Navigation will be handled by GuestRoute + auth state
       navigate(from, { replace: true })
     } catch (err) {
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
-        toast.error('البريد الإلكتروني أو كلمة المرور غير صحيحة')
+        toast.error('البريد الإلكتروني/اسم المستخدم أو كلمة المرور غير صحيحة')
       } else if (err.code === 'auth/user-not-found') {
-        toast.error('لا يوجد حساب بهذا البريد الإلكتروني')
+        toast.error('لا يوجد حساب بهذا البريد الإلكتروني أو اسم المستخدم')
       } else {
         toast.error('حدث خطأ، يرجى المحاولة مرة أخرى')
       }
@@ -54,14 +54,14 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              البريد الإلكتروني
+              البريد الإلكتروني أو اسم المستخدم
             </label>
             <input
-              type="email"
-              name="email"
-              value={form.email}
+              type="text"
+              name="identifier"
+              value={form.identifier}
               onChange={handleChange}
-              placeholder="example@email.com"
+              placeholder="example@email.com or username"
               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               dir="ltr"
             />

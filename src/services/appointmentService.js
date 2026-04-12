@@ -48,11 +48,17 @@ export const getBookedSlots = async (facilityId, doctorId, date) => {
   const q = query(
     appointmentsRef(facilityId),
     where('doctorId', '==', doctorId),
-    where('date', '==', date),
-    where('status', 'in', [APPOINTMENT_STATUS.PENDING, APPOINTMENT_STATUS.CONFIRMED])
+    where('date', '==', date)
   )
   const snap = await getDocs(q)
-  return snap.docs.map((d) => d.data().timeSlot)
+  return snap.docs.map((d) => {
+    const data = d.data()
+    return {
+      id: d.id,
+      ...data,
+      time: data.time || data.timeSlot
+    }
+  })
 }
 
 export const bookAppointment = async (facilityId, appointmentData) => {
@@ -110,3 +116,16 @@ export const updateAppointmentStatus = async (facilityId, appointmentId, status)
 
 export const deleteAppointment = (facilityId, appointmentId) =>
   deleteDoc(doc(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.APPOINTMENTS, appointmentId))
+
+export const createCallCenterAppointment = async (facilityId, data) => {
+  return await addDoc(
+    collection(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.APPOINTMENTS),
+    {
+      ...data,
+      status: APPOINTMENT_STATUS.PENDING,
+      isConfirmed: false,
+      patientId: null, // As requested for call center bookings
+      createdAt: serverTimestamp(),
+    }
+  )
+}

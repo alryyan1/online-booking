@@ -28,6 +28,13 @@ import DoctorManagement from '../pages/facilityadmin/DoctorManagement'
 import AppointmentManagement from '../pages/facilityadmin/AppointmentManagement'
 import FacilityInfo from '../pages/facilityadmin/FacilityInfo'
 
+// Call Center pages
+import CallCenterDashboard from '../pages/callcenter/CallCenterDashboard'
+import CallCenterBookNow from '../pages/callcenter/CallCenterBookNow'
+import CallCenterBookToday from '../pages/callcenter/CallCenterBookToday'
+import CallCenterAppointments from '../pages/callcenter/CallCenterAppointments'
+import CallCenterSchedule from '../pages/callcenter/CallCenterSchedule'
+
 // Not Found
 import NotFound from '../pages/NotFound'
 
@@ -37,6 +44,7 @@ const GuestRoute = ({ children }) => {
   if (currentUser) {
     if (userRole === ROLES.SUPER_ADMIN) return <Navigate to="/superadmin/dashboard" replace />
     if (userRole === ROLES.FACILITY_ADMIN) return <Navigate to="/admin/dashboard" replace />
+    if (userRole === ROLES.CALL_CENTER) return <Navigate to="/callcenter/dashboard" replace />
     return <Navigate to="/" replace />
   }
   return children
@@ -149,6 +157,48 @@ const AppRouter = () => (
       element={
         <ProtectedRoute allowedRoles={[ROLES.FACILITY_ADMIN]}>
           <FacilityInfo />
+        </ProtectedRoute>
+      }
+    />
+
+    {/* Call Center */}
+    <Route
+      path="/callcenter/dashboard"
+      element={
+        <ProtectedRoute allowedRoles={[ROLES.CALL_CENTER]}>
+          <CallCenterDashboard />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/callcenter/book"
+      element={
+        <ProtectedRoute allowedRoles={[ROLES.CALL_CENTER]}>
+          <CallCenterBookNow />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/callcenter/book-today"
+      element={
+        <ProtectedRoute allowedRoles={[ROLES.CALL_CENTER]}>
+          <CallCenterBookToday />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/callcenter/appointments"
+      element={
+        <ProtectedRoute allowedRoles={[ROLES.CALL_CENTER]}>
+          <CallCenterAppointments />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/callcenter/schedule"
+      element={
+        <ProtectedRoute allowedRoles={[ROLES.CALL_CENTER]}>
+          <CallCenterSchedule />
         </ProtectedRoute>
       }
     />

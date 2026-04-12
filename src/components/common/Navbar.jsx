@@ -12,7 +12,7 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       await logout()
-      navigate('/')
+      navigate('/login')
       toast.success('تم تسجيل الخروج بنجاح')
     } catch {
       toast.error('حدث خطأ أثناء تسجيل الخروج')
@@ -22,6 +22,7 @@ const Navbar = () => {
   const getDashboardLink = () => {
     if (userRole === ROLES.SUPER_ADMIN) return '/superadmin/dashboard'
     if (userRole === ROLES.FACILITY_ADMIN) return '/admin/dashboard'
+    if (userRole === ROLES.CALL_CENTER) return '/callcenter/dashboard'
     return '/my-appointments'
   }
 
@@ -52,6 +53,22 @@ const Navbar = () => {
                 <Link to="/my-appointments" className="text-gray-600 hover:text-blue-700 font-medium transition">
                   مواعيدي
                 </Link>
+              )}
+              {userRole === ROLES.CALL_CENTER && (
+                <>
+                  <Link to="/callcenter/book-today" className="text-gray-600 hover:text-blue-700 font-medium transition">
+                    حجز اليوم
+                  </Link>
+                  <Link to="/callcenter/book" className="text-gray-600 hover:text-blue-700 font-medium transition">
+                    حجز موعد
+                  </Link>
+                  <Link to="/callcenter/appointments" className="text-gray-600 hover:text-blue-700 font-medium transition">
+                    المواعيد
+                  </Link>
+                  <Link to="/callcenter/schedule" className="text-gray-600 hover:text-blue-700 font-medium transition">
+                    جدول الأطباء
+                  </Link>
+                </>
               )}
               <button
                 onClick={handleLogout}
@@ -99,6 +116,22 @@ const Navbar = () => {
                 <Link to="/my-appointments" onClick={() => setMenuOpen(false)} className="text-gray-700">
                   مواعيدي
                 </Link>
+              )}
+              {userRole === ROLES.CALL_CENTER && (
+                <>
+                  <Link to="/callcenter/book-today" onClick={() => setMenuOpen(false)} className="text-gray-700">
+                    حجز اليوم
+                  </Link>
+                  <Link to="/callcenter/book" onClick={() => setMenuOpen(false)} className="text-gray-700">
+                    حجز الآن
+                  </Link>
+                  <Link to="/callcenter/appointments" onClick={() => setMenuOpen(false)} className="text-gray-700">
+                    المواعيد
+                  </Link>
+                  <Link to="/callcenter/schedule" onClick={() => setMenuOpen(false)} className="text-gray-700">
+                    جدول الأطباء
+                  </Link>
+                </>
               )}
               <button onClick={handleLogout} className="text-red-600 text-right">
                 تسجيل الخروج
