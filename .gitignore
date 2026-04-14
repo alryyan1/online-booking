@@ -13,6 +13,9 @@ dist-ssr
 *.local
 .env.local
 
+# Firebase Admin SDK service account (never commit this)
+serviceAccountKey.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

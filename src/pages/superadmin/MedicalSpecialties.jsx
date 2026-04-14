@@ -1,49 +1,33 @@
 import { useEffect, useState } from 'react'
-import {
-  getSpecialties,
-  createSpecialty,
-  updateSpecialty,
-  deleteSpecialty,
-} from '../../services/specialtyService'
+import Box from '@mui/material/Box'
+import Grid from '@mui/material/Grid'
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
+import Typography from '@mui/material/Typography'
+import Button from '@mui/material/Button'
+import TextField from '@mui/material/TextField'
+import Table from '@mui/material/Table'
+import TableBody from '@mui/material/TableBody'
+import TableCell from '@mui/material/TableCell'
+import TableContainer from '@mui/material/TableContainer'
+import TableHead from '@mui/material/TableHead'
+import TableRow from '@mui/material/TableRow'
+import Chip from '@mui/material/Chip'
+import Avatar from '@mui/material/Avatar'
+import Stack from '@mui/material/Stack'
+import InputAdornment from '@mui/material/InputAdornment'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import Switch from '@mui/material/Switch'
+import DialogActions from '@mui/material/DialogActions'
+import SearchIcon from '@mui/icons-material/Search'
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
+import AddIcon from '@mui/icons-material/Add'
 import Modal from '../../components/common/Modal'
 import Spinner from '../../components/common/Spinner'
+import { getSpecialties, createSpecialty, updateSpecialty, deleteSpecialty } from '../../services/specialtyService'
 import toast from 'react-hot-toast'
 
 const EMPTY = { name: '', description: '', imageUrl: '', active: true }
-
-const SpecialtyFormFields = ({ form, setForm }) => {
-  const handle = (e) => {
-    const { name, value, type, checked } = e.target
-    setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }))
-  }
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">اسم التخصص *</label>
-        <input name="name" value={form.name} onChange={handle} required placeholder="طب عام، جلدية..."
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">الوصف</label>
-        <textarea name="description" value={form.description} onChange={handle} rows={2} placeholder="وصف التخصص..."
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none" />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">رابط أيقونة/صورة</label>
-        <input name="imageUrl" value={form.imageUrl} onChange={handle} dir="ltr" placeholder="https://..."
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" />
-      </div>
-
-      <div className="flex items-center gap-2 pt-2">
-        <input type="checkbox" name="active" id="active" checked={form.active} onChange={handle} className="w-4 h-4 accent-purple-600" />
-        <label htmlFor="active" className="text-sm font-medium text-gray-700">التخصص مفعل</label>
-      </div>
-    </div>
-  )
-}
 
 const MedicalSpecialties = () => {
   const [specialties, setSpecialties] = useState([])
@@ -56,194 +40,144 @@ const MedicalSpecialties = () => {
 
   const load = async () => {
     setLoading(true)
-    try {
-      const data = await getSpecialties()
-      setSpecialties(data)
-    } catch (error) {
-      toast.error('حدث خطأ أثناء تحميل التخصصات')
-    }
+    try { setSpecialties(await getSpecialties()) }
+    catch { toast.error('حدث خطأ أثناء تحميل التخصصات') }
     setLoading(false)
   }
-
   useEffect(() => { load() }, [])
 
   const filtered = search.trim()
-    ? specialties.filter((s) =>
-        s.name?.toLowerCase().includes(search.toLowerCase()) ||
-        s.description?.toLowerCase().includes(search.toLowerCase())
-      )
+    ? specialties.filter((s) => s.name?.toLowerCase().includes(search.toLowerCase()) || s.description?.toLowerCase().includes(search.toLowerCase()))
     : specialties
 
   const openAdd = () => { setForm(EMPTY); setEditTarget(null); setModalOpen(true) }
   const openEdit = (s) => { setForm({ ...EMPTY, ...s }); setEditTarget(s); setModalOpen(true) }
   const closeModal = () => { setModalOpen(false); setEditTarget(null) }
 
+  const handleField = (e) => {
+    const { name, value, type, checked } = e.target
+    setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }))
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.name.trim()) { toast.error('اسم التخصص مطلوب'); return }
     setSaving(true)
     try {
-      if (editTarget) {
-        await updateSpecialty(editTarget.id, form)
-        toast.success('تم تحديث التخصص')
-      } else {
-        await createSpecialty(form)
-        toast.success('تم إضافة التخصص بنجاح')
-      }
-      closeModal()
-      load()
-    } catch {
-      toast.error('حدث خطأ، يرجى المحاولة')
-    } finally {
-      setSaving(false)
-    }
+      if (editTarget) { await updateSpecialty(editTarget.id, form); toast.success('تم تحديث التخصص') }
+      else { await createSpecialty(form); toast.success('تم إضافة التخصص') }
+      closeModal(); load()
+    } catch { toast.error('حدث خطأ، يرجى المحاولة') }
+    finally { setSaving(false) }
   }
 
-  const handleDelete = async (specialty) => {
-    if (!window.confirm(`هل أنت متأكد من حذف "${specialty.name}"؟`)) return
-    try {
-      await deleteSpecialty(specialty.id)
-      toast.success('تم حذف التخصص')
-      load()
-    } catch {
-      toast.error('حدث خطأ أثناء الحذف')
-    }
+  const handleDelete = async (s) => {
+    if (!window.confirm(`هل أنت متأكد من حذف "${s.name}"؟`)) return
+    try { await deleteSpecialty(s.id); toast.success('تم حذف التخصص'); load() }
+    catch { toast.error('حدث خطأ أثناء الحذف') }
   }
 
-  const handleToggle = async (specialty) => {
-    try {
-      await updateSpecialty(specialty.id, { active: !specialty.active })
-      toast.success(specialty.active ? 'تم إيقاف التخصص' : 'تم تفعيل التخصص')
-      load()
-    } catch {
-      toast.error('حدث خطأ')
-    }
+  const handleToggle = async (s) => {
+    try { await updateSpecialty(s.id, { active: !s.active }); toast.success(s.active ? 'تم إيقاف التخصص' : 'تم تفعيل التخصص'); load() }
+    catch { toast.error('حدث خطأ') }
   }
 
   const activeCount = specialties.filter((s) => s.active !== false).length
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">التخصصات الطبية</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            {specialties.length} تخصص إجمالي — {activeCount} مفعل
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="بحث في التخصصات..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-52"
-          />
-          <button
-            onClick={openAdd}
-            className="bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 transition font-medium text-sm whitespace-nowrap"
-          >
-            + إضافة تخصص
-          </button>
-        </div>
-      </div>
+    <Box sx={{ maxWidth: 1000, mx: 'auto', px: 3, py: 5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 4 }}>
+        <Box>
+          <Typography variant="h5" fontWeight={700}>التخصصات الطبية</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{specialties.length} تخصص إجمالي — {activeCount} مفعل</Typography>
+        </Box>
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <TextField size="small" placeholder="بحث في التخصصات..." value={search} onChange={(e) => setSearch(e.target.value)}
+            InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} sx={{ width: 220 }} />
+          <Button variant="contained" color="secondary" startIcon={<AddIcon />} onClick={openAdd}>إضافة تخصص</Button>
+        </Stack>
+      </Box>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-purple-50 rounded-2xl p-5">
-          <div className="text-3xl mb-1">⚕️</div>
-          <div className="text-2xl font-bold text-purple-700">{specialties.length}</div>
-          <div className="text-xs text-purple-600 font-medium">إجمالي التخصصات</div>
-        </div>
-        <div className="bg-teal-50 rounded-2xl p-5">
-          <div className="text-3xl mb-1">✨</div>
-          <div className="text-2xl font-bold text-teal-700">{activeCount}</div>
-          <div className="text-xs text-teal-600 font-medium">تخصصات مفعلة</div>
-        </div>
-        <div className="bg-orange-50 rounded-2xl p-5">
-          <div className="text-3xl mb-1">⏸️</div>
-          <div className="text-2xl font-bold text-orange-600">{specialties.length - activeCount}</div>
-          <div className="text-xs text-orange-500 font-medium">معطلة</div>
-        </div>
-      </div>
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        {[
+          { label: 'إجمالي التخصصات', value: specialties.length, color: 'secondary' },
+          { label: 'تخصصات مفعلة', value: activeCount, color: 'success' },
+          { label: 'معطلة', value: specialties.length - activeCount, color: 'warning' },
+        ].map((s) => (
+          <Grid item xs={12} sm={4} key={s.label}>
+            <Card sx={{ bgcolor: `${s.color}.50`, boxShadow: 'none', border: 1, borderColor: `${s.color}.200` }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Typography variant="h4" fontWeight={700} color={`${s.color}.main`}>{s.value}</Typography>
+                <Typography variant="body2" fontWeight={500} color={`${s.color}.dark`}>{s.label}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
 
-      {/* Table */}
-      {loading ? (
-        <Spinner size="lg" className="py-20" />
-      ) : filtered.length === 0 ? (
-        <div className="text-center text-gray-400 py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
-          <div className="text-6xl mb-4">⚕️</div>
-          <p className="text-lg">{search ? 'لا توجد نتائج للبحث' : 'لا يوجد تخصصات بعد'}</p>
-        </div>
+      {loading ? <Spinner size="lg" /> : filtered.length === 0 ? (
+        <Card sx={{ textAlign: 'center', py: 8 }}>
+          <MedicalServicesIcon sx={{ fontSize: 60, color: 'grey.300', mb: 2 }} />
+          <Typography color="text.secondary">{search ? 'لا توجد نتائج للبحث' : 'لا يوجد تخصصات بعد'}</Typography>
+        </Card>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600 text-right">
-              <tr>
-                <th className="px-5 py-3 font-medium">التخصص</th>
-                <th className="px-5 py-3 font-medium hidden sm:table-cell">الوصف</th>
-                <th className="px-5 py-3 font-medium">الحالة</th>
-                <th className="px-5 py-3 font-medium">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.map((specialty) => (
-                <tr key={specialty.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-xl flex-shrink-0 overflow-hidden">
-                        {specialty.imageUrl
-                          ? <img src={specialty.imageUrl} alt={specialty.name} className="w-full h-full object-cover rounded-full" />
-                          : '⚕️'}
-                      </div>
-                      <p className="font-medium text-gray-800">{specialty.name}</p>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3 text-gray-500 hidden sm:table-cell max-w-[200px] truncate">
-                    {specialty.description || '-'}
-                  </td>
-                  <td className="px-5 py-3">
-                    <button
-                      onClick={() => handleToggle(specialty)}
-                      className={`text-xs px-2.5 py-1 rounded-full font-medium transition
-                        ${specialty.active !== false
-                          ? 'bg-teal-100 text-teal-700 hover:bg-teal-200'
-                          : 'bg-orange-100 text-orange-600 hover:bg-orange-200'}`}
-                    >
-                      {specialty.active !== false ? 'مفعل' : 'معطل'}
-                    </button>
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => openEdit(specialty)} className="text-blue-600 hover:text-blue-800 font-medium text-xs">تعديل</button>
-                      <button onClick={() => handleDelete(specialty)} className="text-red-500 hover:text-red-700 font-medium text-xs">حذف</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Card>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>التخصص</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>الوصف</TableCell>
+                  <TableCell>الحالة</TableCell>
+                  <TableCell>إجراءات</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filtered.map((s) => (
+                  <TableRow key={s.id} hover>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Avatar src={s.imageUrl} sx={{ bgcolor: 'secondary.100', width: 36, height: 36 }}>
+                          <MedicalServicesIcon fontSize="small" color="secondary" />
+                        </Avatar>
+                        <Typography fontWeight={600}>{s.name}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }, maxWidth: 200 }}>
+                      <Typography noWrap variant="body2" color="text.secondary">{s.description || '—'}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={s.active !== false ? 'مفعل' : 'معطل'} size="small" color={s.active !== false ? 'success' : 'warning'} onClick={() => handleToggle(s)} sx={{ cursor: 'pointer' }} />
+                    </TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <Button size="small" color="secondary" onClick={() => openEdit(s)}>تعديل</Button>
+                        <Button size="small" color="error" onClick={() => handleDelete(s)}>حذف</Button>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
       )}
 
-      {/* Modal */}
       <Modal isOpen={modalOpen} onClose={closeModal} title={editTarget ? 'تعديل التخصص' : 'إضافة تخصص جديد'} size="md">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <SpecialtyFormFields form={form} setForm={setForm} />
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={closeModal}
-              className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg hover:bg-gray-50 transition font-medium">
-              إلغاء
-            </button>
-            <button type="submit" disabled={saving}
-              className="flex-1 bg-purple-600 text-white py-2.5 rounded-lg hover:bg-purple-700 transition font-medium disabled:opacity-50">
+        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+          <TextField label="اسم التخصص *" name="name" value={form.name} onChange={handleField} required fullWidth />
+          <TextField label="الوصف" name="description" value={form.description} onChange={handleField} fullWidth multiline rows={2} />
+          <TextField label="رابط أيقونة/صورة" name="imageUrl" value={form.imageUrl} onChange={handleField} fullWidth inputProps={{ dir: 'ltr' }} placeholder="https://..." />
+          <FormControlLabel control={<Switch name="active" checked={form.active} onChange={handleField} />} label="التخصص مفعل" />
+          <DialogActions sx={{ px: 0, pb: 0 }}>
+            <Button onClick={closeModal} variant="outlined" color="inherit">إلغاء</Button>
+            <Button type="submit" variant="contained" color="secondary" disabled={saving}>
               {saving ? 'جاري الحفظ...' : editTarget ? 'حفظ التعديلات' : 'إضافة التخصص'}
-            </button>
-          </div>
-        </form>
+            </Button>
+          </DialogActions>
+        </Box>
       </Modal>
-    </div>
+    </Box>
   )
 }
 

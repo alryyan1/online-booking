@@ -14,55 +14,23 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 import { auth, db } from './firebase'
-import { COLLECTIONS, ROLES, SUPER_ADMIN_EMAILS } from '../utils/constants'
+import { COLLECTIONS, ROLES } from '../utils/constants'
 
-export const loginWithEmail = async (identifier, password) => {
-  // 1. Try Firebase Auth (if identifier contains @)
-  if (identifier.includes('@')) {
-    try {
-      return await signInWithEmailAndPassword(auth, identifier, password)
-    } catch (err) {
-      if (err.code !== 'auth/invalid-email' && err.code !== 'auth/user-not-found') {
-        throw err
-      }
-      // Fallback to username search if email login fails but might be a username
-    }
-  }
-
-  // 2. Try Username search in Firestore
-  const q = query(
-    collection(db, COLLECTIONS.USERS),
-    where('userName', '==', identifier),
-    where('userPassword', '==', password)
-  )
-  const snap = await getDocs(q)
-  if (!snap.empty) {
-    const userData = snap.docs[0].data()
-    // Return a structure that looks like a user credential but indicates it's custom
-    return {
-      user: {
-        uid: snap.docs[0].id,
-        email: userData.email || identifier,
-        displayName: userData.userName,
-        isCustom: true,
-      },
-      userData,
-    }
-  }
-
-  // 3. Final failure
-  throw { code: 'auth/invalid-credential' }
+export const loginWithEmail = async (email, password) => {
+  return await signInWithEmailAndPassword(auth, email, password)
 }
 
-export const registerPatient = async (email, password, displayName) => {
+export const registerUser = async (email, password, displayName, role = ROLES.PATIENT, facilityId = null) => {
   const credential = await createUserWithEmailAndPassword(auth, email, password)
-  await setDoc(doc(db, COLLECTIONS.USERS, credential.user.uid), {
+  const data = {
     uid: credential.user.uid,
     email,
     displayName,
-    role: ROLES.PATIENT,
+    role,
     createdAt: serverTimestamp(),
-  })
+  }
+  if (facilityId) data.facilityId = facilityId
+  await setDoc(doc(db, COLLECTIONS.USERS, credential.user.uid), data)
   return credential
 }
 
@@ -71,27 +39,27 @@ export const logout = () => signOut(auth)
 export const getUserRole = async (user) => {
   if (!user) return { role: null, facilityId: null }
 
-  // Check super admin
-  if (SUPER_ADMIN_EMAILS.includes(user.email)) {
-    return { role: ROLES.SUPER_ADMIN, facilityId: null }
-  }
+  // 1. Check Firebase custom claims (set via admin API → SystemUsers page)
+  try {
+    const tokenResult = await user.getIdTokenResult(true)
+    const claimRole = tokenResult.claims.role
+    if (claimRole) {
+      // For facility admin claim, also resolve their facilityId from Firestore
+      if (claimRole === ROLES.FACILITY_ADMIN) {
+        const q = query(collection(db, COLLECTIONS.FACILITIES), where('adminEmail', '==', user.email))
+        const snap = await getDocs(q)
+        return { role: claimRole, facilityId: snap.empty ? null : snap.docs[0].id }
+      }
+      return { role: claimRole, facilityId: null }
+    }
+  } catch { /* token read failed, fall through */ }
 
-  // Check facility admin
-  const q = query(
-    collection(db, COLLECTIONS.FACILITIES),
-    where('adminEmail', '==', user.email)
-  )
-  const snap = await getDocs(q)
-  if (!snap.empty) {
-    return { role: ROLES.FACILITY_ADMIN, facilityId: snap.docs[0].id }
-  }
-
-  // Check USERS collection for other roles (Patient, Call Center)
+  // 2. Check Firestore users collection (call center / patient stored with role field)
   const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, user.uid))
   if (userDoc.exists()) {
     const userData = userDoc.data()
     const role = userData.role || (userData.userType === 'callCenter' ? ROLES.CALL_CENTER : ROLES.PATIENT)
-    const facilityId = userData.centerId || null
+    const facilityId = userData.facilityId || userData.centerId || null
     return { role, facilityId }
   }
 

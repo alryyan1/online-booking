@@ -1,9 +1,36 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import Box from '@mui/material/Box'
+import Grid from '@mui/material/Grid'
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
+import Typography from '@mui/material/Typography'
+import Button from '@mui/material/Button'
+import Chip from '@mui/material/Chip'
+import Avatar from '@mui/material/Avatar'
+import Divider from '@mui/material/Divider'
+import Stack from '@mui/material/Stack'
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
+import PeopleIcon from '@mui/icons-material/People'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import CancelIcon from '@mui/icons-material/Cancel'
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
+import VerifiedIcon from '@mui/icons-material/Verified'
+import ShieldIcon from '@mui/icons-material/Shield'
 import { getAllFacilities } from '../../services/facilityService'
 import { getSpecialties } from '../../services/specialtyService'
 import { getInsuranceCompanies } from '../../services/insuranceService'
 import Spinner from '../../components/common/Spinner'
+
+const StatCard = ({ label, value, icon, color, bgcolor }) => (
+  <Card sx={{ bgcolor, borderRadius: 3, boxShadow: 'none', border: '1px solid', borderColor: `${color}.200` }}>
+    <CardContent sx={{ p: 3 }}>
+      <Box sx={{ color: `${color}.main`, fontSize: 36, mb: 1 }}>{icon}</Box>
+      <Typography variant="h4" fontWeight={700} color={`${color}.main`}>{value}</Typography>
+      <Typography variant="body2" fontWeight={500} color={`${color}.dark`} sx={{ mt: 0.5 }}>{label}</Typography>
+    </CardContent>
+  </Card>
+)
 
 const SuperAdminDashboard = () => {
   const [facilities, setFacilities] = useState([])
@@ -12,15 +39,9 @@ const SuperAdminDashboard = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([
-      getAllFacilities(),
-      getSpecialties(),
-      getInsuranceCompanies(),
-    ]).then(([facs, specs, ins]) => {
-      setFacilities(facs)
-      setSpecialties(specs)
-      setInsurance(ins)
-    }).finally(() => setLoading(false))
+    Promise.all([getAllFacilities(), getSpecialties(), getInsuranceCompanies()])
+      .then(([facs, specs, ins]) => { setFacilities(facs); setSpecialties(specs); setInsurance(ins) })
+      .finally(() => setLoading(false))
   }, [])
 
   const available = facilities.filter((f) => f.available).length
@@ -29,103 +50,77 @@ const SuperAdminDashboard = () => {
   const enabledInsurance = insurance.filter((c) => c.enabled !== false).length
 
   const stats = [
-    { label: 'إجمالي المرافق', value: facilities.length, icon: '🏥', color: 'bg-blue-50 text-blue-700' },
-    { label: 'مرافق نشطة', value: available, icon: '✅', color: 'bg-green-50 text-green-700' },
-    { label: 'مرافق معطلة', value: unavailable, icon: '⛔', color: 'bg-red-50 text-red-700' },
-    { label: 'إجمالي التخصصات', value: specialties.length, icon: '⚕️', color: 'bg-purple-50 text-purple-700' },
-    { label: 'تخصصات نشطة', value: activeSpecs, icon: '✨', color: 'bg-teal-50 text-teal-700' },
-    { label: 'شركات التأمين', value: insurance.length, icon: '🛡️', color: 'bg-indigo-50 text-indigo-700' },
-    { label: 'تأمين مفعّل', value: enabledInsurance, icon: '🔵', color: 'bg-sky-50 text-sky-700' },
+    { label: 'إجمالي المرافق', value: facilities.length, icon: <LocalHospitalIcon fontSize="inherit" />, color: 'primary', bgcolor: 'primary.50' },
+    { label: 'مرافق نشطة', value: available, icon: <CheckCircleIcon fontSize="inherit" />, color: 'success', bgcolor: 'success.50' },
+    { label: 'مرافق معطلة', value: unavailable, icon: <CancelIcon fontSize="inherit" />, color: 'error', bgcolor: 'error.50' },
+    { label: 'إجمالي التخصصات', value: specialties.length, icon: <MedicalServicesIcon fontSize="inherit" />, color: 'secondary', bgcolor: 'secondary.50' },
+    { label: 'تخصصات نشطة', value: activeSpecs, icon: <VerifiedIcon fontSize="inherit" />, color: 'info', bgcolor: 'info.50' },
+    { label: 'شركات التأمين', value: insurance.length, icon: <ShieldIcon fontSize="inherit" />, color: 'warning', bgcolor: 'warning.50' },
+    { label: 'تأمين مفعّل', value: enabledInsurance, icon: <ShieldIcon fontSize="inherit" />, color: 'success', bgcolor: 'success.50' },
   ]
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">لوحة تحكم المشرف العام</h1>
-          <p className="text-gray-500 text-sm mt-1">إدارة جميع المرافق الصحية</p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            to="/superadmin/insurance"
-            className="bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 transition font-medium text-sm whitespace-nowrap"
-          >
-            🛡️ التأمين
-          </Link>
-          <Link
-            to="/superadmin/specialties"
-            className="bg-purple-600 text-white px-4 py-2.5 rounded-lg hover:bg-purple-700 transition font-medium text-sm whitespace-nowrap"
-          >
-            ⚕️ التخصصات
-          </Link>
-          <Link
-            to="/superadmin/doctors"
-            className="bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 transition font-medium text-sm whitespace-nowrap"
-          >
-            👨‍⚕️ الأطباء
-          </Link>
-          <Link
-            to="/superadmin/facilities"
-            className="bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium text-sm whitespace-nowrap"
-          >
-            + مرفق
-          </Link>
-        </div>
-      </div>
+    <Box sx={{ maxWidth: 1100, mx: 'auto', px: 3, py: 5 }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 5 }}>
+        <Box>
+          <Typography variant="h5" fontWeight={700}>لوحة تحكم المشرف العام</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>إدارة جميع المرافق الصحية</Typography>
+        </Box>
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          <Button component={Link} to="/superadmin/insurance" variant="contained" color="secondary" size="small" startIcon={<ShieldIcon />}>التأمين</Button>
+          <Button component={Link} to="/superadmin/specialties" variant="contained" color="secondary" size="small" startIcon={<MedicalServicesIcon />}>التخصصات</Button>
+          <Button component={Link} to="/superadmin/doctors" variant="contained" color="success" size="small" startIcon={<MedicalServicesIcon />}>الأطباء</Button>
+          <Button component={Link} to="/superadmin/users" variant="contained" color="info" size="small" startIcon={<PeopleIcon />}>المستخدمون</Button>
+          <Button component={Link} to="/superadmin/facilities" variant="contained" size="small" startIcon={<LocalHospitalIcon />}>+ مرفق</Button>
+        </Stack>
+      </Box>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5 mb-10">
+      <Grid container spacing={2} sx={{ mb: 5 }}>
         {stats.map((s) => (
-          <div key={s.label} className={`${s.color} rounded-2xl p-6`}>
-            <div className="text-3xl mb-2">{s.icon}</div>
-            <div className="text-3xl font-bold">{s.value}</div>
-            <div className="text-sm font-medium mt-1">{s.label}</div>
-          </div>
+          <Grid item xs={6} sm={4} lg={3} key={s.label}>
+            <StatCard {...s} />
+          </Grid>
         ))}
-      </div>
+      </Grid>
 
-      {/* Facilities List */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div className="p-5 border-b flex items-center justify-between">
-          <h2 className="font-bold text-gray-800">المرافق الصحية</h2>
-          <Link to="/superadmin/facilities" className="text-blue-600 text-sm hover:underline">
-            إدارة الكل
-          </Link>
-        </div>
+      {/* Facilities list */}
+      <Card>
+        <Box sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: 1, borderColor: 'divider' }}>
+          <Typography fontWeight={700}>المرافق الصحية</Typography>
+          <Button component={Link} to="/superadmin/facilities" size="small">إدارة الكل</Button>
+        </Box>
         {loading ? (
-          <Spinner size="md" className="py-10" />
+          <Spinner size="md" />
         ) : facilities.length === 0 ? (
-          <p className="text-center text-gray-400 py-10">لا توجد مرافق بعد</p>
+          <Typography color="text.secondary" textAlign="center" py={5}>لا توجد مرافق بعد</Typography>
         ) : (
-          <div className="divide-y">
-            {facilities.map((f) => (
-              <div key={f.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-xl overflow-hidden">
-                    {f.imageUrl ? <img src={f.imageUrl} alt={f.name} className="w-full h-full object-cover" /> : '🏥'}
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-800">{f.name}</p>
-                    <p className="text-xs text-gray-500">{f.address}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${f.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                    {f.available ? 'نشط' : 'معطل'}
-                  </span>
-                  <Link
-                    to={`/superadmin/facilities/${f.id}`}
-                    className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1 rounded-lg hover:bg-purple-100 transition"
-                  >
+          facilities.map((f, i) => (
+            <Box key={f.id}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2, '&:hover': { bgcolor: 'grey.50' } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Avatar src={f.imageUrl} sx={{ bgcolor: 'primary.100', width: 44, height: 44 }}>
+                    <LocalHospitalIcon color="primary" />
+                  </Avatar>
+                  <Box>
+                    <Typography fontWeight={600}>{f.name}</Typography>
+                    <Typography variant="caption" color="text.secondary">{f.address}</Typography>
+                  </Box>
+                </Box>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip label={f.available ? 'نشط' : 'معطل'} size="small" color={f.available ? 'success' : 'error'} variant="outlined" />
+                  <Button component={Link} to={`/superadmin/facilities/${f.id}`} variant="outlined" color="secondary" size="small">
                     لوحة التحكم
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
+                  </Button>
+                </Stack>
+              </Box>
+              {i < facilities.length - 1 && <Divider />}
+            </Box>
+          ))
         )}
-      </div>
-    </div>
+      </Card>
+    </Box>
   )
 }
 

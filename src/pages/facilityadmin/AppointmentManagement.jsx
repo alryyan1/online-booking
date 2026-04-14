@@ -2,6 +2,21 @@ import { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAppointments } from '../../hooks/useAppointments'
 import { updateAppointmentStatus, deleteAppointment } from '../../services/appointmentService'
+import Box from '@mui/material/Box'
+import Card from '@mui/material/Card'
+import Typography from '@mui/material/Typography'
+import Button from '@mui/material/Button'
+import Table from '@mui/material/Table'
+import TableBody from '@mui/material/TableBody'
+import TableCell from '@mui/material/TableCell'
+import TableContainer from '@mui/material/TableContainer'
+import TableHead from '@mui/material/TableHead'
+import TableRow from '@mui/material/TableRow'
+import Stack from '@mui/material/Stack'
+import Chip from '@mui/material/Chip'
+import IconButton from '@mui/material/IconButton'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EventIcon from '@mui/icons-material/Event'
 import AppointmentStatusBadge from '../../components/appointment/AppointmentStatusBadge'
 import Spinner from '../../components/common/Spinner'
 import { APPOINTMENT_STATUS } from '../../utils/constants'
@@ -20,31 +35,20 @@ const AppointmentManagement = () => {
   const { appointments, loading, refetch } = useAppointments(facilityId)
   const [activeTab, setActiveTab] = useState('all')
 
-  const filtered = activeTab === 'all'
-    ? appointments
-    : appointments.filter((a) => a.status === activeTab)
+  const filtered = activeTab === 'all' ? appointments : appointments.filter((a) => a.status === activeTab)
 
   const handleStatus = async (appt, status) => {
     try {
       await updateAppointmentStatus(facilityId, appt.id, status)
-      toast.success(
-        status === APPOINTMENT_STATUS.CONFIRMED ? 'تم تأكيد الموعد' : 'تم إلغاء الموعد'
-      )
+      toast.success(status === APPOINTMENT_STATUS.CONFIRMED ? 'تم تأكيد الموعد' : 'تم إلغاء الموعد')
       refetch()
-    } catch {
-      toast.error('حدث خطأ')
-    }
+    } catch { toast.error('حدث خطأ') }
   }
 
   const handleDelete = async (appt) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الموعد؟')) return
-    try {
-      await deleteAppointment(facilityId, appt.id)
-      toast.success('تم حذف الموعد')
-      refetch()
-    } catch {
-      toast.error('حدث خطأ')
-    }
+    try { await deleteAppointment(facilityId, appt.id); toast.success('تم حذف الموعد'); refetch() }
+    catch { toast.error('حدث خطأ') }
   }
 
   const counts = {
@@ -55,104 +59,95 @@ const AppointmentManagement = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">إدارة المواعيد</h1>
-        <p className="text-gray-500 text-sm mt-1">{appointments.length} موعد إجمالي</p>
-      </div>
+    <Box sx={{ maxWidth: 1100, mx: 'auto', px: 3, py: 5 }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h5" fontWeight={700}>إدارة المواعيد</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{appointments.length} موعد إجمالي</Typography>
+      </Box>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto">
+      <Stack direction="row" spacing={1} sx={{ mb: 3, overflowX: 'auto', pb: 0.5 }}>
         {TABS.map((tab) => (
-          <button
+          <Button
             key={tab.key}
+            variant={activeTab === tab.key ? 'contained' : 'outlined'}
+            size="small"
             onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition
-              ${activeTab === tab.key
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'}`}
+            sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+            endIcon={
+              <Chip
+                label={counts[tab.key]}
+                size="small"
+                sx={{
+                  height: 18,
+                  fontSize: '0.65rem',
+                  bgcolor: activeTab === tab.key ? 'rgba(255,255,255,0.25)' : 'grey.100',
+                  color: activeTab === tab.key ? 'white' : 'text.secondary',
+                }}
+              />
+            }
           >
             {tab.label}
-            <span className={`px-1.5 py-0.5 rounded-full text-xs
-              ${activeTab === tab.key ? 'bg-white/20' : 'bg-gray-100'}`}>
-              {counts[tab.key]}
-            </span>
-          </button>
+          </Button>
         ))}
-      </div>
+      </Stack>
 
-      {loading ? (
-        <Spinner size="lg" className="py-20" />
-      ) : filtered.length === 0 ? (
-        <div className="text-center text-gray-400 py-20 bg-white rounded-2xl shadow-sm">
-          <div className="text-5xl mb-4">📅</div>
-          <p>لا توجد مواعيد في هذا القسم</p>
-        </div>
+      {loading ? <Spinner size="lg" /> : filtered.length === 0 ? (
+        <Card sx={{ textAlign: 'center', py: 10 }}>
+          <EventIcon sx={{ fontSize: 60, color: 'grey.300', mb: 2 }} />
+          <Typography color="text.secondary">لا توجد مواعيد في هذا القسم</Typography>
+        </Card>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600 text-right">
-                <tr>
-                  <th className="px-5 py-3 font-medium">الطبيب</th>
-                  <th className="px-5 py-3 font-medium">التاريخ والوقت</th>
-                  <th className="px-5 py-3 font-medium hidden sm:table-cell">التأمين</th>
-                  <th className="px-5 py-3 font-medium">الحالة</th>
-                  <th className="px-5 py-3 font-medium">إجراءات</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+        <Card>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>الطبيب</TableCell>
+                  <TableCell>التاريخ والوقت</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>التأمين</TableCell>
+                  <TableCell>الحالة</TableCell>
+                  <TableCell>إجراءات</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {filtered.map((appt) => (
-                  <tr key={appt.id} className="hover:bg-gray-50">
-                    <td className="px-5 py-4">
-                      <p className="font-medium text-gray-800">{appt.doctorName}</p>
-                      <p className="text-xs text-gray-400 truncate max-w-[150px]">{appt.patientEmail}</p>
-                    </td>
-                    <td className="px-5 py-4">
-                      <p className="text-gray-700">{formatDateArabic(appt.date)}</p>
-                      <p className="text-xs text-gray-500" dir="ltr">{appt.timeSlot}</p>
-                    </td>
-                    <td className="px-5 py-4 text-gray-500 hidden sm:table-cell">
-                      {appt.insurance || '-'}
-                    </td>
-                    <td className="px-5 py-4">
+                  <TableRow key={appt.id} hover>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={600}>{appt.doctorName}</Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 150, display: 'block' }}>{appt.patientEmail}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">{formatDateArabic(appt.date)}</Typography>
+                      <Typography variant="caption" color="text.secondary" dir="ltr">{appt.timeSlot}</Typography>
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                      <Typography variant="body2" color="text.secondary">{appt.insurance || '—'}</Typography>
+                    </TableCell>
+                    <TableCell>
                       <AppointmentStatusBadge status={appt.status} />
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
+                    </TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={0.5} alignItems="center">
                         {appt.status === APPOINTMENT_STATUS.PENDING && (
                           <>
-                            <button
-                              onClick={() => handleStatus(appt, APPOINTMENT_STATUS.CONFIRMED)}
-                              className="text-xs text-green-600 border border-green-200 px-2 py-1 rounded hover:bg-green-50 transition"
-                            >
-                              تأكيد
-                            </button>
-                            <button
-                              onClick={() => handleStatus(appt, APPOINTMENT_STATUS.CANCELED)}
-                              className="text-xs text-red-500 border border-red-200 px-2 py-1 rounded hover:bg-red-50 transition"
-                            >
-                              إلغاء
-                            </button>
+                            <Button size="small" color="success" variant="outlined" onClick={() => handleStatus(appt, APPOINTMENT_STATUS.CONFIRMED)}>تأكيد</Button>
+                            <Button size="small" color="error" variant="outlined" onClick={() => handleStatus(appt, APPOINTMENT_STATUS.CANCELED)}>إلغاء</Button>
                           </>
                         )}
-                        <button
-                          onClick={() => handleDelete(appt)}
-                          className="text-xs text-gray-400 hover:text-red-500 transition"
-                          title="حذف"
-                        >
-                          🗑
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                        <IconButton size="small" color="default" onClick={() => handleDelete(appt)} title="حذف">
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
       )}
-    </div>
+    </Box>
   )
 }
 

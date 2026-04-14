@@ -1,9 +1,12 @@
+import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
+
 const Footer = () => (
-  <footer className="bg-gray-800 text-gray-300 text-center py-6 mt-auto">
-    <p className="text-sm">
+  <Box component="footer" sx={{ bgcolor: 'grey.800', color: 'grey.300', textAlign: 'center', py: 3, mt: 'auto' }}>
+    <Typography variant="body2">
       جميع الحقوق محفوظة &copy; {new Date().getFullYear()} — منظومة الحجز الطبي
-    </p>
-  </footer>
+    </Typography>
+  </Box>
 )
 
 export default Footer

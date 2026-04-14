@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import Box from '@mui/material/Box'
+import Grid from '@mui/material/Grid'
+import Typography from '@mui/material/Typography'
+import TextField from '@mui/material/TextField'
+import InputAdornment from '@mui/material/InputAdornment'
+import Breadcrumbs from '@mui/material/Breadcrumbs'
+import MuiLink from '@mui/material/Link'
+import PersonIcon from '@mui/icons-material/Person'
+import SearchIcon from '@mui/icons-material/Search'
 import { getFacilityById } from '../../services/facilityService'
 import { getCentralDoctors } from '../../services/doctorService'
 import DoctorCard from '../../components/doctor/DoctorCard'
@@ -9,80 +18,50 @@ const DoctorListing = () => {
   const { facilityId } = useParams()
   const [facility, setFacility] = useState(null)
   const [doctors, setDoctors] = useState([])
-  const [filtered, setFiltered] = useState([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const load = async () => {
-      const [f, d] = await Promise.all([
-        getFacilityById(facilityId),
-        getCentralDoctors(),
-      ])
-      setFacility(f)
-      setDoctors(d)
-      setFiltered(d)
-      setLoading(false)
-    }
-    load()
+    Promise.all([getFacilityById(facilityId), getCentralDoctors()])
+      .then(([f, d]) => { setFacility(f); setDoctors(d) })
+      .finally(() => setLoading(false))
   }, [facilityId])
 
-  useEffect(() => {
-    if (!search.trim()) {
-      setFiltered(doctors)
-    } else {
-      const q = search.toLowerCase()
-      setFiltered(
-        doctors.filter(
-          (d) =>
-            d.name?.toLowerCase().includes(q) ||
-            d.specialization?.toLowerCase().includes(q)
-        )
-      )
-    }
-  }, [search, doctors])
+  const filtered = search.trim()
+    ? doctors.filter((d) => d.name?.toLowerCase().includes(search.toLowerCase()) || d.specialization?.toLowerCase().includes(search.toLowerCase()))
+    : doctors
 
-  if (loading) return <Spinner size="lg" className="py-32" />
+  if (loading) return <Spinner size="lg" />
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-        <Link to="/" className="hover:text-blue-600">الرئيسية</Link>
-        <span>›</span>
-        <Link to={`/facility/${facilityId}`} className="hover:text-blue-600">
-          {facility?.name}
-        </Link>
-        <span>›</span>
-        <span className="text-gray-700">الأطباء</span>
-      </div>
+    <Box sx={{ maxWidth: 1300, mx: 'auto', px: 3, py: 5 }}>
+      <Breadcrumbs sx={{ mb: 3 }}>
+        <MuiLink component={Link} to="/" underline="hover" color="inherit">الرئيسية</MuiLink>
+        <MuiLink component={Link} to={`/facility/${facilityId}`} underline="hover" color="inherit">{facility?.name}</MuiLink>
+        <Typography color="text.primary">الأطباء</Typography>
+      </Breadcrumbs>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">
-          أطباء {facility?.name}
-        </h1>
-        <input
-          type="text"
-          placeholder="ابحث باسم الطبيب أو التخصص..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="border border-gray-300 rounded-lg px-4 py-2 text-sm w-full sm:w-72 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 4 }}>
+        <Typography variant="h5" fontWeight={700}>أطباء {facility?.name}</Typography>
+        <TextField size="small" placeholder="ابحث باسم الطبيب أو التخصص..." value={search} onChange={(e) => setSearch(e.target.value)}
+          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} sx={{ width: { xs: '100%', sm: 280 } }} />
+      </Box>
 
       {filtered.length === 0 ? (
-        <div className="text-center text-gray-400 py-20">
-          <div className="text-6xl mb-4">👨‍⚕️</div>
-          <p>لا يوجد أطباء متاحون</p>
-        </div>
+        <Box textAlign="center" py={10}>
+          <PersonIcon sx={{ fontSize: 80, color: 'grey.300', mb: 2 }} />
+          <Typography color="text.secondary">لا يوجد أطباء متاحون</Typography>
+        </Box>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Grid container spacing={3}>
           {filtered.map((doctor) => (
-            <DoctorCard key={doctor.id} doctor={doctor} facilityId={facilityId} />
+            <Grid item xs={12} sm={6} lg={4} key={doctor.id}>
+              <DoctorCard doctor={doctor} facilityId={facilityId} />
+            </Grid>
           ))}
-        </div>
+        </Grid>
       )}
-    </div>
+    </Box>
   )
 }
 

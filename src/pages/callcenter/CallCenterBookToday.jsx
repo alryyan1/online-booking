@@ -3,6 +3,27 @@ import { useAuth } from '../../contexts/AuthContext'
 import { getSpecializations, getDoctorsBySpec } from '../../services/facilityService'
 import { getBookedSlots, createCallCenterAppointment } from '../../services/appointmentService'
 import { getWorkingShifts, getDayName, formatDate, categorizeSlotsByShift } from '../../utils/bookingUtils'
+import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
+import Button from '@mui/material/Button'
+import TextField from '@mui/material/TextField'
+import Table from '@mui/material/Table'
+import TableBody from '@mui/material/TableBody'
+import TableCell from '@mui/material/TableCell'
+import TableContainer from '@mui/material/TableContainer'
+import TableHead from '@mui/material/TableHead'
+import TableRow from '@mui/material/TableRow'
+import Avatar from '@mui/material/Avatar'
+import Chip from '@mui/material/Chip'
+import Stack from '@mui/material/Stack'
+import Card from '@mui/material/Card'
+import InputAdornment from '@mui/material/InputAdornment'
+import DialogActions from '@mui/material/DialogActions'
+import SearchIcon from '@mui/icons-material/Search'
+import ClearIcon from '@mui/icons-material/Clear'
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
+import PersonIcon from '@mui/icons-material/Person'
+import FlashOnIcon from '@mui/icons-material/FlashOn'
 import Spinner from '../../components/common/Spinner'
 import Modal from '../../components/common/Modal'
 import toast from 'react-hot-toast'
@@ -13,23 +34,17 @@ const CallCenterBookToday = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
 
-  // Today's Date info
   const today = new Date()
   const todayDate = formatDate(today)
   const todayDayName = getDayName(today)
 
-  // Selection state
   const [selectedDoctor, setSelectedDoctor] = useState(null)
   const [selectedSpec, setSelectedSpec] = useState(null)
   const [selectedShift, setSelectedShift] = useState(null)
-
-  // Form state
   const [showFormModal, setShowFormModal] = useState(false)
   const [patientData, setPatientData] = useState({ name: '', phone: '' })
   const [isBooking, setIsBooking] = useState(false)
-
-  // Shift usage state
-  const [bookedCounts, setBookedCounts] = useState({}) // { doctorId: { morning: X, evening: Y } }
+  const [bookedCounts, setBookedCounts] = useState({})
   const [loadingCounts, setLoadingCounts] = useState(false)
 
   const loadData = async () => {
@@ -48,321 +63,191 @@ const CallCenterBookToday = () => {
       )
       const specsWithDoctors = specData.filter((s) => s.doctors.length > 0)
       setSpecialties(specsWithDoctors)
-
-      // Auto-fetch counts for all doctors working today
-      specsWithDoctors.forEach(spec => {
-        spec.doctors.forEach(doc => fetchDoctorCounts(doc))
-      })
-    } catch (err) {
-      console.error(err)
-      toast.error('حدث خطأ أثناء تحميل البيانات')
-    }
+      specsWithDoctors.forEach((spec) => spec.doctors.forEach((doc) => fetchDoctorCounts(doc)))
+    } catch (err) { console.error(err); toast.error('حدث خطأ أثناء تحميل البيانات') }
     setLoading(false)
   }
 
-  useEffect(() => {
-    loadData()
-  }, [facilityId])
+  useEffect(() => { loadData() }, [facilityId])
 
   const fetchDoctorCounts = async (doctor) => {
-    if (bookedCounts[doctor.id]) return // Already cached
+    if (bookedCounts[doctor.id]) return
     setLoadingCounts(true)
     try {
       const slots = await getBookedSlots(facilityId, doctor.id, todayDate)
       const counts = categorizeSlotsByShift(slots, doctor.workingSchedule?.[todayDayName])
-      setBookedCounts(prev => ({ ...prev, [doctor.id]: counts }))
-    } catch (err) {
-      console.error(err)
-    }
+      setBookedCounts((prev) => ({ ...prev, [doctor.id]: counts }))
+    } catch (err) { console.error(err) }
     setLoadingCounts(false)
-  }
-
-  const handleBookNowClick = (doctor, spec) => {
-    if (selectedDoctor?.id === doctor.id) {
-      setSelectedDoctor(null)
-      setSelectedShift(null)
-    } else {
-      setSelectedDoctor(doctor)
-      setSelectedSpec(spec)
-      setSelectedShift(null)
-      fetchDoctorCounts(doctor)
-    }
-  }
-
-  const handleShiftSelect = (shift) => {
-    setSelectedShift(shift)
-    setShowFormModal(true)
   }
 
   const handleConfirmBooking = async (e) => {
     e.preventDefault()
-    if (!patientData.name.trim() || !patientData.phone.trim()) {
-      toast.error('يرجى إدخال اسم المريض ورقم الهاتف')
-      return
-    }
-
+    if (!patientData.name.trim() || !patientData.phone.trim()) { toast.error('يرجى إدخال اسم المريض ورقم الهاتف'); return }
     setIsBooking(true)
     try {
       await createCallCenterAppointment(facilityId, {
-        centralSpecialtyId: selectedSpec.id,
-        specializationName: selectedSpec.specName,
-        doctorId: selectedDoctor.id,
-        doctorName: selectedDoctor.docName,
-        facilityId: facilityId,
-        date: todayDate,
-        period: selectedShift.type,
-        time: selectedShift.start,
-        patientName: patientData.name.trim(),
-        patientPhone: patientData.phone.trim(),
+        centralSpecialtyId: selectedSpec.id, specializationName: selectedSpec.specName,
+        doctorId: selectedDoctor.id, doctorName: selectedDoctor.docName, facilityId,
+        date: todayDate, period: selectedShift.type, time: selectedShift.start,
+        patientName: patientData.name.trim(), patientPhone: patientData.phone.trim(),
       })
       toast.success('تم حجز الموعد بنجاح')
-      
-      // Refresh counts for this doctor
       const slots = await getBookedSlots(facilityId, selectedDoctor.id, todayDate)
       const counts = categorizeSlotsByShift(slots, selectedDoctor.workingSchedule?.[todayDayName])
-      setBookedCounts(prev => ({ ...prev, [selectedDoctor.id]: counts }))
-
-      setShowFormModal(false)
-      setPatientData({ name: '', phone: '' })
-      setSelectedDoctor(null)
-      setSelectedShift(null)
-    } catch (err) {
-      console.error(err)
-      toast.error('حدث خطأ أثناء إتمام الحجز')
-    } finally {
-      setIsBooking(false)
-    }
+      setBookedCounts((prev) => ({ ...prev, [selectedDoctor.id]: counts }))
+      setShowFormModal(false); setPatientData({ name: '', phone: '' })
+      setSelectedDoctor(null); setSelectedShift(null)
+    } catch (err) { console.error(err); toast.error('حدث خطأ أثناء إتمام الحجز') }
+    finally { setIsBooking(false) }
   }
 
-  // Smart filtering logic
-  const filteredSpecialties = specialties.map(spec => {
+  const filteredSpecialties = specialties.map((spec) => {
     const term = searchTerm.toLowerCase().trim()
     if (!term) return spec
-
     const specMatches = spec.specName.toLowerCase().includes(term)
-    const filteredDoctors = spec.doctors.filter(doc => 
-      doc.docName.toLowerCase().includes(term)
-    )
-
+    const filteredDoctors = spec.doctors.filter((doc) => doc.docName.toLowerCase().includes(term))
     if (specMatches) return spec
     if (filteredDoctors.length > 0) return { ...spec, doctors: filteredDoctors }
     return null
   }).filter(Boolean)
 
-  if (loading) return (
-    <div className="flex items-center justify-center p-20">
-      <Spinner size="lg" />
-    </div>
-  )
+  if (loading) return <Spinner size="lg" />
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 text-right">
-      <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-           <h1 className="text-2xl font-black text-gray-800 flex items-center gap-3 justify-end">
-              <span className="bg-red-500 text-white text-[10px] px-2 py-1 rounded-lg animate-pulse">LIVE</span>
-              حجز اليوم - {todayDate}
-           </h1>
-           <p className="text-gray-500 mt-1">اختر الطبيب والفترة مباشرة لإتمام الحجز.</p>
-        </div>
+    <Box sx={{ maxWidth: 1300, mx: 'auto', px: 3, py: 5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 5 }}>
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+            <Chip label="LIVE" color="error" size="small" icon={<FlashOnIcon />} sx={{ animation: 'pulse 2s infinite', fontWeight: 700 }} />
+            <Typography variant="h5" fontWeight={700}>حجز اليوم — {todayDate}</Typography>
+          </Stack>
+          <Typography variant="body2" color="text.secondary">اختر الطبيب والفترة مباشرة لإتمام الحجز.</Typography>
+        </Box>
+        <TextField size="small" placeholder="ابحث باسم الطبيب أو التخصص..." value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
+            endAdornment: searchTerm ? <InputAdornment position="end"><Button size="small" onClick={() => setSearchTerm('')} sx={{ minWidth: 0, p: 0.5 }}><ClearIcon fontSize="small" /></Button></InputAdornment> : null,
+          }}
+          sx={{ width: { xs: '100%', md: 320 } }}
+        />
+      </Box>
 
-        {/* Search Interface */}
-        <div className="relative w-full md:max-w-md group">
-           <input 
-             type="text" 
-             placeholder="ابحث باسم الطبيب أو التخصص..."
-             value={searchTerm}
-             onChange={(e) => setSearchTerm(e.target.value)}
-             className="w-full text-right bg-white border-2 border-gray-100 rounded-2xl pl-4 pr-12 py-3.5 text-sm focus:outline-none focus:border-blue-600 focus:shadow-[0_0_15px_rgba(37,99,235,0.1)] transition-all font-bold placeholder:text-gray-300"
-           />
-           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-blue-600 transition-colors text-xl">🔍</span>
-           {searchTerm && (
-             <button 
-               onClick={() => setSearchTerm('')}
-               className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 transition-colors"
-             >
-               ✕
-             </button>
-           )}
-        </div>
-      </header>
-
-      <div className="space-y-16">
+      <Stack spacing={4}>
         {specialties.length === 0 ? (
-          <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-gray-100 shadow-sm">
-            <div className="text-6xl mb-4 opacity-20 transition-transform hover:scale-110 duration-500">🏥</div>
-            <p className="text-gray-400 text-xl font-medium">لا يوجد أطباء مداومون اليوم</p>
-          </div>
+          <Card sx={{ textAlign: 'center', py: 10 }}>
+            <MedicalServicesIcon sx={{ fontSize: 60, color: 'grey.300', mb: 2 }} />
+            <Typography color="text.secondary">لا يوجد أطباء مداومون اليوم</Typography>
+          </Card>
         ) : filteredSpecialties.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm">
-             <div className="text-6xl mb-4 opacity-20">🔎</div>
-             <p className="text-gray-400 text-lg font-bold">لا توجد نتائج تطابق "{searchTerm}"</p>
-             <button onClick={() => setSearchTerm('')} className="mt-4 text-blue-600 font-bold hover:underline">عرض الكل ←</button>
-          </div>
+          <Card sx={{ textAlign: 'center', py: 10 }}>
+            <Typography color="text.secondary">لا توجد نتائج تطابق "{searchTerm}"</Typography>
+            <Button onClick={() => setSearchTerm('')} size="small" sx={{ mt: 1 }}>عرض الكل</Button>
+          </Card>
         ) : (
           filteredSpecialties.map((spec) => (
-            <section key={spec.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black shadow-lg shadow-blue-100">
+            <Box key={spec.id}>
+              <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+                <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontSize: '1rem', fontWeight: 700 }}>
                   {spec.specName.charAt(0)}
-                </div>
-                <h2 className="text-xl font-black text-gray-800">{spec.specName}</h2>
-                <div className="h-px flex-1 bg-gradient-to-l from-gray-100 to-transparent"></div>
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{spec.doctors.length} أطباء</span>
-              </div>
+                </Avatar>
+                <Typography variant="h6" fontWeight={700}>{spec.specName}</Typography>
+                <Box sx={{ flex: 1, height: 1, bgcolor: 'divider' }} />
+                <Typography variant="caption" color="text.disabled">{spec.doctors.length} أطباء</Typography>
+              </Stack>
 
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-right border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50/50 border-b border-gray-100">
-                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">الطبيب</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">الفترة الصباحية</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">الفترة المسائية</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">الحالة</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
+              <Card>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>الطبيب</TableCell>
+                        <TableCell align="center">الفترة الصباحية</TableCell>
+                        <TableCell align="center">الفترة المسائية</TableCell>
+                        <TableCell align="center">الحالة</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
                       {spec.doctors.map((doc) => {
                         const shifts = getWorkingShifts(doc, today) || []
-                        const morningShift = shifts.find(s => s.type === 'morning')
-                        const eveningShift = shifts.find(s => s.type === 'evening')
+                        const morningShift = shifts.find((s) => s.type === 'morning')
+                        const eveningShift = shifts.find((s) => s.type === 'evening')
                         const counts = bookedCounts[doc.id] || { morning: 0, evening: 0 }
                         const hasCounts = !!bookedCounts[doc.id]
 
-                        const renderShiftCell = (shift) => {
-                          if (!shift) return <td className="px-6 py-4 text-center text-gray-300 text-xs italic">غير متاح</td>
-                          
+                        const ShiftCell = ({ shift }) => {
+                          if (!shift) return <TableCell align="center"><Typography variant="caption" color="text.disabled">غير متاح</Typography></TableCell>
                           const limit = doc[shift.type + 'PatientLimit'] || 0
                           const booked = counts[shift.type] || 0
                           const isFull = limit > 0 && booked >= limit
-
                           return (
-                            <td className="px-6 py-4">
-                              <div className="flex flex-col items-center justify-center gap-2">
-                                <div className="flex items-center gap-3">
-                                   <div className="text-center min-w-[60px]">
-                                      <p className="text-xs font-black text-gray-900 mb-0.5" dir="ltr">{shift.start}</p>
-                                      <div className={`px-2 py-0.5 rounded-md text-[11px] font-black border transition-colors ${
-                                        isFull 
-                                          ? 'bg-red-50 text-red-600 border-red-100' 
-                                          : hasCounts ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-gray-50 text-gray-400 border-gray-100'
-                                      }`}>
-                                         {hasCounts ? `${booked} / ${limit}` : '-- / --'}
-                                      </div>
-                                   </div>
-                                   <button
-                                     onClick={() => {
-                                       setSelectedDoctor(doc)
-                                       setSelectedSpec(spec)
-                                       setSelectedShift(shift)
-                                       setShowFormModal(true)
-                                     }}
-                                     onMouseEnter={() => fetchDoctorCounts(doc)}
-                                     disabled={isFull}
-                                     className={`px-5 py-2 rounded-xl text-xs font-black transition-all ${
-                                       isFull 
-                                         ? 'bg-gray-100 text-gray-300 cursor-not-allowed border border-gray-100'
-                                         : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-100 active:scale-95'
-                                     }`}
-                                   >
-                                     {isFull ? 'مغلق' : 'حجز'}
-                                   </button>
-                                </div>
-                              </div>
-                            </td>
+                            <TableCell align="center">
+                              <Stack alignItems="center" spacing={0.75}>
+                                <Typography variant="body2" fontWeight={700} dir="ltr">{shift.start}</Typography>
+                                <Chip size="small" label={hasCounts ? `${booked}/${limit}` : '—/—'}
+                                  color={isFull ? 'error' : hasCounts ? 'primary' : 'default'} variant="outlined" />
+                                <Button size="small" variant="contained" disabled={isFull}
+                                  onMouseEnter={() => fetchDoctorCounts(doc)}
+                                  onClick={() => { setSelectedDoctor(doc); setSelectedSpec(spec); setSelectedShift(shift); setShowFormModal(true) }}>
+                                  {isFull ? 'مغلق' : 'حجز'}
+                                </Button>
+                              </Stack>
+                            </TableCell>
                           )
                         }
 
                         return (
-                          <tr key={doc.id} className="hover:bg-blue-50/10 transition-colors group">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-xl flex-shrink-0 border border-gray-100 group-hover:border-blue-200 transition-colors">
-                                  {doc.photoUrl ? <img src={doc.photoUrl} className="w-full h-full object-cover rounded-xl" /> : '👨‍⚕️'}
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="font-bold text-gray-800 group-hover:text-blue-900 transition-colors truncate">{doc.docName}</p>
-                                  <p className="text-[10px] text-gray-400 font-bold tracking-tight">{doc.phoneNumber || 'بدون رقم'}</p>
-                                </div>
-                              </div>
-                            </td>
-                            {renderShiftCell(morningShift)}
-                            {renderShiftCell(eveningShift)}
-                            <td className="px-6 py-4 text-center">
-                               <span className={`text-[9px] px-2.5 py-1 rounded-full font-black uppercase tracking-wider ${
-                                 doc.isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-                               }`}>
-                                 {doc.isActive ? 'نشط' : 'متوقف'}
-                               </span>
-                            </td>
-                          </tr>
+                          <TableRow key={doc.id} hover>
+                            <TableCell>
+                              <Stack direction="row" spacing={1.5} alignItems="center">
+                                <Avatar src={doc.photoUrl} sx={{ width: 40, height: 40, bgcolor: 'primary.100' }}>
+                                  <PersonIcon fontSize="small" color="primary" />
+                                </Avatar>
+                                <Box>
+                                  <Typography fontWeight={600}>{doc.docName}</Typography>
+                                  <Typography variant="caption" color="text.secondary">{doc.phoneNumber || 'بدون رقم'}</Typography>
+                                </Box>
+                              </Stack>
+                            </TableCell>
+                            <ShiftCell shift={morningShift} />
+                            <ShiftCell shift={eveningShift} />
+                            <TableCell align="center">
+                              <Chip size="small" label={doc.isActive ? 'نشط' : 'متوقف'} color={doc.isActive ? 'success' : 'error'} variant="outlined" />
+                            </TableCell>
+                          </TableRow>
                         )
                       })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Card>
+            </Box>
           ))
         )}
-      </div>
+      </Stack>
 
       {/* Patient Form Modal */}
-      <Modal 
-        isOpen={showFormModal} 
-        onClose={() => setShowFormModal(false)}
-        title={`حجز موعد - ${selectedDoctor?.docName}`}
-        size="md"
-      >
-        <div className="space-y-6">
-           <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex items-center justify-between">
-              <div className="text-right">
-                 <p className="text-[10px] font-black text-blue-400 uppercase">الموعد</p>
-                 <p className="text-sm font-black text-blue-900">{todayDate} | {selectedShift?.label}</p>
-              </div>
-              <div className="text-blue-600 text-xl font-bold" dir="ltr">{selectedShift?.start}</div>
-           </div>
-
-           <form onSubmit={handleConfirmBooking} className="space-y-6">
-              <div className="space-y-2">
-                 <label className="text-xs font-black text-gray-700 pr-1 uppercase">اسم المريض الكامل</label>
-                 <input 
-                   type="text"
-                   required
-                   value={patientData.name}
-                   onChange={(e) => setPatientData({...patientData, name: e.target.value})}
-                   placeholder="أدخل الاسم الرباعي"
-                   className="w-full border-2 border-gray-50 rounded-2xl px-5 py-4 focus:outline-none focus:border-blue-600 bg-gray-50/30 transition-colors"
-                 />
-              </div>
-              <div className="space-y-2">
-                 <label className="text-xs font-black text-gray-700 pr-1 uppercase">رقم الهاتف للاتصال</label>
-                 <input 
-                   type="tel"
-                   required
-                   value={patientData.phone}
-                   onChange={(e) => setPatientData({...patientData, phone: e.target.value})}
-                   placeholder="مثلاً: 09XXXXXXXX"
-                   className="w-full border-2 border-gray-50 rounded-2xl px-5 py-4 focus:outline-none focus:border-blue-600 bg-gray-50/30 transition-colors"
-                   dir="ltr"
-                 />
-              </div>
-
-              <div className="pt-2">
-                 <button 
-                   type="submit"
-                   disabled={isBooking}
-                   className="w-full bg-green-600 text-white font-black py-5 rounded-2xl hover:bg-green-700 transition active:scale-[0.98] shadow-2xl shadow-green-100 flex items-center justify-center gap-3 disabled:opacity-50 text-xl"
-                 >
-                    {isBooking ? <Spinner size="sm" /> : '✓'}
-                    {isBooking ? 'جاري الحفظ...' : 'تأكيد الحجز الآن'}
-                 </button>
-              </div>
-           </form>
-        </div>
+      <Modal isOpen={showFormModal} onClose={() => setShowFormModal(false)} title={`حجز موعد - ${selectedDoctor?.docName}`} size="md">
+        <Box sx={{ mb: 3, bgcolor: 'primary.50', borderRadius: 2, p: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box>
+            <Typography variant="caption" color="primary.dark" fontWeight={700} sx={{ textTransform: 'uppercase' }}>الموعد</Typography>
+            <Typography fontWeight={700}>{todayDate} | {selectedShift?.label}</Typography>
+          </Box>
+          <Typography variant="h5" fontWeight={700} color="primary" dir="ltr">{selectedShift?.start}</Typography>
+        </Box>
+        <Box component="form" onSubmit={handleConfirmBooking} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField label="اسم المريض الكامل" required value={patientData.name} onChange={(e) => setPatientData({ ...patientData, name: e.target.value })} fullWidth placeholder="أدخل الاسم الرباعي" />
+          <TextField label="رقم الهاتف" type="tel" required value={patientData.phone} onChange={(e) => setPatientData({ ...patientData, phone: e.target.value })} fullWidth inputProps={{ dir: 'ltr' }} placeholder="مثلاً: 09XXXXXXXX" />
+          <DialogActions sx={{ px: 0, pb: 0 }}>
+            <Button onClick={() => setShowFormModal(false)} variant="outlined" color="inherit">إلغاء</Button>
+            <Button type="submit" variant="contained" color="success" size="large" disabled={isBooking}>
+              {isBooking ? 'جاري الحفظ...' : 'تأكيد الحجز الآن'}
+            </Button>
+          </DialogActions>
+        </Box>
       </Modal>
-    </div>
+    </Box>
   )
 }
 

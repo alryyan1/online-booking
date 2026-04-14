@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import Box from '@mui/material/Box'
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
+import Typography from '@mui/material/Typography'
+import Button from '@mui/material/Button'
+import TextField from '@mui/material/TextField'
+import Stack from '@mui/material/Stack'
+import Chip from '@mui/material/Chip'
+import InputAdornment from '@mui/material/InputAdornment'
+import AddIcon from '@mui/icons-material/Add'
 import {
   getFacilityById,
   updateFacility,
@@ -17,18 +27,13 @@ const FacilityInfo = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({})
-
   const [specializations, setSpecializations] = useState([])
   const [newSpec, setNewSpec] = useState('')
   const [insurance, setInsurance] = useState([])
   const [newIns, setNewIns] = useState('')
 
   const load = async () => {
-    const [f, s, i] = await Promise.all([
-      getFacilityById(facilityId),
-      getSpecializations(facilityId),
-      getInsuranceCompanies(facilityId),
-    ])
+    const [f, s, i] = await Promise.all([getFacilityById(facilityId), getSpecializations(facilityId), getInsuranceCompanies(facilityId)])
     setFacility(f)
     setForm({ name: f.name, address: f.address || '', phone: f.phone || '' })
     setSpecializations(s)
@@ -36,24 +41,16 @@ const FacilityInfo = () => {
     setLoading(false)
   }
 
-  useEffect(() => {
-    if (facilityId) load()
-  }, [facilityId])
+  useEffect(() => { if (facilityId) load() }, [facilityId])
 
-  const handleChange = (e) =>
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
+  const handleChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
 
   const handleSave = async (e) => {
     e.preventDefault()
     setSaving(true)
-    try {
-      await updateFacility(facilityId, form)
-      toast.success('تم حفظ معلومات المرفق')
-    } catch {
-      toast.error('حدث خطأ أثناء الحفظ')
-    } finally {
-      setSaving(false)
-    }
+    try { await updateFacility(facilityId, form); toast.success('تم حفظ معلومات المرفق') }
+    catch { toast.error('حدث خطأ أثناء الحفظ') }
+    finally { setSaving(false) }
   }
 
   const handleAddSpec = async (e) => {
@@ -61,8 +58,7 @@ const FacilityInfo = () => {
     if (!newSpec.trim()) return
     await addSpecialization(facilityId, newSpec.trim())
     setNewSpec('')
-    const s = await getSpecializations(facilityId)
-    setSpecializations(s)
+    setSpecializations(await getSpecializations(facilityId))
     toast.success('تم إضافة التخصص')
   }
 
@@ -71,122 +67,89 @@ const FacilityInfo = () => {
     if (!newIns.trim()) return
     await addInsuranceCompany(facilityId, newIns.trim())
     setNewIns('')
-    const i = await getInsuranceCompanies(facilityId)
-    setInsurance(i)
+    setInsurance(await getInsuranceCompanies(facilityId))
     toast.success('تم إضافة شركة التأمين')
   }
 
-  if (loading) return <Spinner size="lg" className="py-32" />
+  if (loading) return <Spinner size="lg" />
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
-      <h1 className="text-2xl font-bold text-gray-800 mb-8">معلومات المرفق</h1>
+    <Box sx={{ maxWidth: 700, mx: 'auto', px: 3, py: 5 }}>
+      <Typography variant="h5" fontWeight={700} sx={{ mb: 4 }}>معلومات المرفق</Typography>
 
       {/* Basic Info */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h2 className="font-bold text-gray-700 mb-4">البيانات الأساسية</h2>
-        <form onSubmit={handleSave} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">اسم المرفق</label>
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">العنوان</label>
-            <input
-              type="text"
-              name="address"
-              value={form.address}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">رقم الهاتف</label>
-            <input
-              type="tel"
-              name="phone"
-              value={form.phone}
-              onChange={handleChange}
-              dir="ltr"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50"
-          >
-            {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
-          </button>
-        </form>
-      </div>
+      <Card sx={{ mb: 3 }}>
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>البيانات الأساسية</Typography>
+          <Box component="form" onSubmit={handleSave} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField label="اسم المرفق" name="name" value={form.name || ''} onChange={handleChange} fullWidth />
+            <TextField label="العنوان" name="address" value={form.address || ''} onChange={handleChange} fullWidth />
+            <TextField label="رقم الهاتف" name="phone" type="tel" value={form.phone || ''} onChange={handleChange} fullWidth inputProps={{ dir: 'ltr' }} />
+            <Button type="submit" variant="contained" disabled={saving} sx={{ alignSelf: 'flex-start' }}>
+              {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
 
       {/* Specializations */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h2 className="font-bold text-gray-700 mb-4">التخصصات الطبية</h2>
-        <div className="flex flex-wrap gap-2 mb-4">
-          {specializations.map((s) => (
-            <span key={s.id} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-              {s.name}
-            </span>
-          ))}
-          {specializations.length === 0 && (
-            <p className="text-sm text-gray-400">لا توجد تخصصات بعد</p>
-          )}
-        </div>
-        <form onSubmit={handleAddSpec} className="flex gap-2">
-          <input
-            type="text"
-            value={newSpec}
-            onChange={(e) => setNewSpec(e.target.value)}
-            placeholder="أضف تخصصاً جديداً..."
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition"
-          >
-            إضافة
-          </button>
-        </form>
-      </div>
+      <Card sx={{ mb: 3 }}>
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>التخصصات الطبية</Typography>
+          <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
+            {specializations.length > 0
+              ? specializations.map((s) => <Chip key={s.id} label={s.name} color="primary" variant="outlined" size="small" />)
+              : <Typography variant="body2" color="text.secondary">لا توجد تخصصات بعد</Typography>
+            }
+          </Stack>
+          <Box component="form" onSubmit={handleAddSpec}>
+            <TextField
+              size="small"
+              value={newSpec}
+              onChange={(e) => setNewSpec(e.target.value)}
+              placeholder="أضف تخصصاً جديداً..."
+              fullWidth
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Button type="submit" size="small" variant="contained" startIcon={<AddIcon />} disabled={!newSpec.trim()}>إضافة</Button>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+        </CardContent>
+      </Card>
 
       {/* Insurance Companies */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h2 className="font-bold text-gray-700 mb-4">شركات التأمين المعتمدة</h2>
-        <div className="flex flex-wrap gap-2 mb-4">
-          {insurance.map((i) => (
-            <span key={i.id} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-              {i.name}
-            </span>
-          ))}
-          {insurance.length === 0 && (
-            <p className="text-sm text-gray-400">لا توجد شركات تأمين بعد</p>
-          )}
-        </div>
-        <form onSubmit={handleAddIns} className="flex gap-2">
-          <input
-            type="text"
-            value={newIns}
-            onChange={(e) => setNewIns(e.target.value)}
-            placeholder="أضف شركة تأمين..."
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            type="submit"
-            className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition"
-          >
-            إضافة
-          </button>
-        </form>
-      </div>
-    </div>
+      <Card>
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>شركات التأمين المعتمدة</Typography>
+          <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
+            {insurance.length > 0
+              ? insurance.map((i) => <Chip key={i.id} label={i.name} color="success" variant="outlined" size="small" />)
+              : <Typography variant="body2" color="text.secondary">لا توجد شركات تأمين بعد</Typography>
+            }
+          </Stack>
+          <Box component="form" onSubmit={handleAddIns}>
+            <TextField
+              size="small"
+              value={newIns}
+              onChange={(e) => setNewIns(e.target.value)}
+              placeholder="أضف شركة تأمين..."
+              fullWidth
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Button type="submit" size="small" variant="contained" color="success" startIcon={<AddIcon />} disabled={!newIns.trim()}>إضافة</Button>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
   )
 }
 

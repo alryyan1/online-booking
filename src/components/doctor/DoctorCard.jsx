@@ -1,43 +1,48 @@
 import { Link } from 'react-router-dom'
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
+import CardActions from '@mui/material/CardActions'
+import Typography from '@mui/material/Typography'
+import Button from '@mui/material/Button'
+import Avatar from '@mui/material/Avatar'
+import Box from '@mui/material/Box'
+import Chip from '@mui/material/Chip'
+import Stack from '@mui/material/Stack'
+import PersonIcon from '@mui/icons-material/Person'
+import EventIcon from '@mui/icons-material/Event'
 
 const DoctorCard = ({ doctor, facilityId }) => {
   const { id, name, specialization, imageUrl, photoUrl, bio, workingDays } = doctor
-
   const displayImage = imageUrl || photoUrl
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100 p-5 flex flex-col">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-3xl flex-shrink-0 overflow-hidden">
-          {displayImage ? (
-            <img src={displayImage} alt={name} className="w-full h-full object-cover" />
-          ) : '👨‍⚕️'}
-        </div>
-        <div>
-          <h3 className="font-bold text-gray-800 text-lg">{name}</h3>
-          {specialization && (
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-              {specialization}
-            </span>
-          )}
-        </div>
-      </div>
+    <Card sx={{ borderRadius: 3, display: 'flex', flexDirection: 'column', transition: 'box-shadow 0.2s', '&:hover': { boxShadow: 4 } }}>
+      <CardContent sx={{ flex: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Avatar src={displayImage} sx={{ width: 64, height: 64, bgcolor: 'primary.100', flexShrink: 0 }}>
+            <PersonIcon fontSize="large" color="primary" />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" fontWeight={700}>{name}</Typography>
+            {specialization && <Chip label={specialization} size="small" color="primary" variant="outlined" sx={{ mt: 0.5 }} />}
+          </Box>
+        </Box>
 
-      {bio && <p className="text-sm text-gray-500 mb-3 flex-1">{bio}</p>}
+        {bio && <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>{bio}</Typography>}
 
-      {workingDays && workingDays.length > 0 && (
-        <p className="text-xs text-gray-400 mb-4">
-          🗓 أيام العمل: {workingDays.join(' - ')}
-        </p>
-      )}
-
-      <Link
-        to={`/facility/${facilityId}/book/${id}`}
-        className="mt-auto block w-full text-center bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium"
-      >
-        احجز موعداً
-      </Link>
-    </div>
+        {workingDays && workingDays.length > 0 && (
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <EventIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+            <Typography variant="caption" color="text.secondary">{workingDays.join(' - ')}</Typography>
+          </Stack>
+        )}
+      </CardContent>
+      <CardActions sx={{ px: 2, pb: 2 }}>
+        <Button component={Link} to={`/facility/${facilityId}/book/${id}`} variant="contained" fullWidth>
+          احجز موعداً
+        </Button>
+      </CardActions>
+    </Card>
   )
 }
 

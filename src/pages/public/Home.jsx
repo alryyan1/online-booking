@@ -1,4 +1,12 @@
 import { useFacilities } from '../../contexts/FacilityContext'
+import Box from '@mui/material/Box'
+import Grid from '@mui/material/Grid'
+import Typography from '@mui/material/Typography'
+import Chip from '@mui/material/Chip'
+import Stack from '@mui/material/Stack'
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import PeopleIcon from '@mui/icons-material/People'
 import FacilityCard from '../../components/facility/FacilityCard'
 import Spinner from '../../components/common/Spinner'
 
@@ -6,48 +14,46 @@ const Home = () => {
   const { facilities, loading } = useFacilities()
 
   return (
-    <div>
+    <Box>
       {/* Hero */}
-      <section className="bg-gradient-to-br from-blue-700 to-indigo-800 text-white py-20 px-4 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">منظومة الحجز الطبي</h1>
-        <p className="text-blue-100 text-lg max-w-xl mx-auto">
+      <Box sx={{ background: 'linear-gradient(135deg, #1565c0 0%, #3949ab 100%)', color: 'white', py: { xs: 8, md: 12 }, px: 3, textAlign: 'center' }}>
+        <Typography variant="h3" fontWeight={800} sx={{ mb: 2, fontSize: { xs: '2rem', md: '2.75rem' } }}>
+          منظومة الحجز الطبي
+        </Typography>
+        <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.85)', maxWidth: 520, mx: 'auto', mb: 4, fontWeight: 400, fontSize: { xs: '1rem', md: '1.15rem' } }}>
           احجز موعدك مع أفضل الأطباء في أقرب مرفق صحي إليك بكل سهولة وسرعة
-        </p>
-        <div className="mt-8 flex justify-center gap-4 flex-wrap">
-          <div className="bg-white/20 backdrop-blur px-6 py-3 rounded-full text-sm">
-            ✅ حجز فوري
-          </div>
-          <div className="bg-white/20 backdrop-blur px-6 py-3 rounded-full text-sm">
-            👨‍⚕️ أطباء متخصصون
-          </div>
-          <div className="bg-white/20 backdrop-blur px-6 py-3 rounded-full text-sm">
-            🏥 مرافق متعددة
-          </div>
-        </div>
-      </section>
+        </Typography>
+        <Stack direction="row" spacing={1.5} justifyContent="center" flexWrap="wrap" gap={1}>
+          <Chip icon={<CheckCircleIcon />} label="حجز فوري" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', borderColor: 'rgba(255,255,255,0.3)', '.MuiChip-icon': { color: 'white' } }} variant="outlined" />
+          <Chip icon={<PeopleIcon />} label="أطباء متخصصون" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', borderColor: 'rgba(255,255,255,0.3)', '.MuiChip-icon': { color: 'white' } }} variant="outlined" />
+          <Chip icon={<LocalHospitalIcon />} label="مرافق متعددة" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', borderColor: 'rgba(255,255,255,0.3)', '.MuiChip-icon': { color: 'white' } }} variant="outlined" />
+        </Stack>
+      </Box>
 
       {/* Facilities */}
-      <section className="max-w-7xl mx-auto px-4 py-14">
-        <h2 className="text-2xl font-bold text-gray-800 mb-8 text-center">
+      <Box sx={{ maxWidth: 1300, mx: 'auto', px: 3, py: 7 }}>
+        <Typography variant="h5" fontWeight={700} textAlign="center" sx={{ mb: 5 }}>
           المرافق الصحية المتاحة
-        </h2>
+        </Typography>
 
         {loading ? (
-          <Spinner size="lg" className="py-20" />
+          <Spinner size="lg" />
         ) : facilities.length === 0 ? (
-          <div className="text-center text-gray-400 py-20">
-            <div className="text-6xl mb-4">🏥</div>
-            <p className="text-lg">لا توجد مرافق صحية متاحة حالياً</p>
-          </div>
+          <Box textAlign="center" py={10}>
+            <LocalHospitalIcon sx={{ fontSize: 80, color: 'grey.300', mb: 2 }} />
+            <Typography variant="h6" color="text.secondary">لا توجد مرافق صحية متاحة حالياً</Typography>
+          </Box>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Grid container spacing={3}>
             {facilities.map((facility) => (
-              <FacilityCard key={facility.id} facility={facility} />
+              <Grid item xs={12} sm={6} lg={4} key={facility.id}>
+                <FacilityCard facility={facility} />
+              </Grid>
             ))}
-          </div>
+          </Grid>
         )}
-      </section>
-    </div>
+      </Box>
+    </Box>
   )
 }
 

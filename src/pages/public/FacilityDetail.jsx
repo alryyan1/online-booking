@@ -1,5 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import Box from '@mui/material/Box'
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
+import Grid from '@mui/material/Grid'
+import Typography from '@mui/material/Typography'
+import Button from '@mui/material/Button'
+import Avatar from '@mui/material/Avatar'
+import Chip from '@mui/material/Chip'
+import Stack from '@mui/material/Stack'
+import Divider from '@mui/material/Divider'
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
+import LocationOnIcon from '@mui/icons-material/LocationOn'
+import PhoneIcon from '@mui/icons-material/Phone'
+import PersonIcon from '@mui/icons-material/Person'
 import { getFacilityById } from '../../services/facilityService'
 import { getCentralDoctors } from '../../services/doctorService'
 import Spinner from '../../components/common/Spinner'
@@ -11,102 +25,99 @@ const FacilityDetail = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const load = async () => {
-      const [f, d] = await Promise.all([
-        getFacilityById(facilityId),
-        getCentralDoctors(),
-      ])
-      setFacility(f)
-      setDoctors(d)
-      setLoading(false)
-    }
-    load()
+    Promise.all([getFacilityById(facilityId), getCentralDoctors()])
+      .then(([f, d]) => { setFacility(f); setDoctors(d) })
+      .finally(() => setLoading(false))
   }, [facilityId])
 
-  if (loading) return <Spinner size="lg" className="py-32" />
+  if (loading) return <Spinner size="lg" />
   if (!facility) return (
-    <div className="text-center py-32 text-gray-400">
-      <div className="text-6xl mb-4">❌</div>
-      <p>المرفق غير موجود</p>
-    </div>
+    <Box textAlign="center" py={16}>
+      <LocalHospitalIcon sx={{ fontSize: 80, color: 'grey.300', mb: 2 }} />
+      <Typography color="text.secondary">المرفق غير موجود</Typography>
+    </Box>
   )
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
+    <Box sx={{ maxWidth: 1000, mx: 'auto', px: 3, py: 5 }}>
       {/* Facility Header */}
-      <div className="bg-white rounded-2xl shadow-md overflow-hidden mb-8">
-        <div className="h-56 bg-gradient-to-br from-blue-100 to-indigo-200">
+      <Card sx={{ borderRadius: 3, overflow: 'hidden', mb: 4 }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="stretch">
+          {/* Details — left */}
+          <CardContent sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <Typography variant="h4" fontWeight={700} sx={{ mb: 2 }}>{facility.name}</Typography>
+            <Stack spacing={1}>
+              {facility.address && (
+                <Stack direction="row" spacing={0.5} alignItems="center">
+                  <LocationOnIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+                  <Typography variant="body2" color="text.secondary">{facility.address}</Typography>
+                </Stack>
+              )}
+              {facility.phone && (
+                <Stack direction="row" spacing={0.5} alignItems="center">
+                  <PhoneIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+                  <Typography variant="body2" color="text.secondary" dir="ltr">{facility.phone}</Typography>
+                </Stack>
+              )}
+            </Stack>
+          </CardContent>
+          {/* Image — right */}
           {facility.imageUrl ? (
-            <img src={facility.imageUrl} alt={facility.name} className="w-full h-full object-cover" />
+            <Box
+              component="img"
+              src={facility.imageUrl}
+              alt={facility.name}
+              sx={{ width: { xs: '100%', sm: 240 }, height: { xs: 200, sm: 'auto' }, objectFit: 'cover', flexShrink: 0, order: { xs: -1, sm: 0 } }}
+            />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-8xl">🏥</div>
+            <Box sx={{ width: { xs: '100%', sm: 240 }, height: { xs: 160, sm: 'auto' }, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, order: { xs: -1, sm: 0 } }}>
+              <LocalHospitalIcon sx={{ fontSize: 80, color: 'grey.300' }} />
+            </Box>
           )}
-        </div>
-        <div className="p-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-3">{facility.name}</h1>
-          <div className="flex flex-wrap gap-6 text-gray-600">
-            {facility.address && (
-              <span className="flex items-center gap-2">📍 {facility.address}</span>
-            )}
-            {facility.phone && (
-              <span className="flex items-center gap-2" dir="ltr">📞 {facility.phone}</span>
-            )}
-          </div>
-        </div>
-      </div>
+        </Stack>
+      </Card>
 
-      {/* Doctors Preview */}
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-bold text-gray-800">الأطباء المتاحون ({doctors.length})</h2>
-        <Link
-          to={`/facility/${facilityId}/doctors`}
-          className="text-blue-600 hover:underline text-sm font-medium"
-        >
-          عرض الكل ←
-        </Link>
-      </div>
+      {/* Doctors */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h6" fontWeight={700}>الأطباء المتاحون ({doctors.length})</Typography>
+        <Button component={Link} to={`/facility/${facilityId}/doctors`} size="small">عرض الكل ←</Button>
+      </Box>
 
       {doctors.length === 0 ? (
-        <div className="text-center text-gray-400 py-10 bg-white rounded-xl shadow-sm">
-          لا يوجد أطباء متاحون حالياً
-        </div>
+        <Card sx={{ textAlign: 'center', py: 6 }}>
+          <Typography color="text.secondary">لا يوجد أطباء متاحون حالياً</Typography>
+        </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {doctors.slice(0, 4).map((doctor) => (
-            <div key={doctor.id} className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-4 border border-gray-100">
-              <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-2xl flex-shrink-0">
-                {doctor.imageUrl ? (
-                  <img src={doctor.imageUrl} alt={doctor.name} className="w-full h-full object-cover rounded-full" />
-                ) : '👨‍⚕️'}
-              </div>
-              <div className="flex-1">
-                <p className="font-bold text-gray-800">{doctor.name}</p>
-                {doctor.specialization && (
-                  <p className="text-sm text-blue-600">{doctor.specialization}</p>
-                )}
-              </div>
-              <Link
-                to={`/facility/${facilityId}/book/${doctor.id}`}
-                className="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-blue-700 transition"
-              >
-                احجز
-              </Link>
-            </div>
-          ))}
-        </div>
-      )}
+        <>
+          <Grid container spacing={2}>
+            {doctors.slice(0, 4).map((doctor) => (
+              <Grid item xs={12} sm={6} key={doctor.id}>
+                <Card variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Avatar src={doctor.imageUrl} sx={{ width: 56, height: 56, bgcolor: 'primary.100', flexShrink: 0 }}>
+                    <PersonIcon color="primary" />
+                  </Avatar>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography fontWeight={700}>{doctor.name}</Typography>
+                    {doctor.specialization && <Chip label={doctor.specialization} size="small" color="primary" variant="outlined" sx={{ mt: 0.25 }} />}
+                  </Box>
+                  <Button component={Link} to={`/facility/${facilityId}/book/${doctor.id}`} variant="contained" size="small" sx={{ flexShrink: 0 }}>
+                    احجز
+                  </Button>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
 
-      {doctors.length > 4 && (
-        <div className="text-center mt-6">
-          <Link
-            to={`/facility/${facilityId}/doctors`}
-            className="inline-block bg-blue-50 text-blue-700 px-8 py-3 rounded-full hover:bg-blue-100 transition font-medium"
-          >
-            عرض جميع الأطباء ({doctors.length})
-          </Link>
-        </div>
+          {doctors.length > 4 && (
+            <Box textAlign="center" sx={{ mt: 3 }}>
+              <Button component={Link} to={`/facility/${facilityId}/doctors`} variant="outlined" size="large">
+                عرض جميع الأطباء ({doctors.length})
+              </Button>
+            </Box>
+          )}
+        </>
       )}
-    </div>
+    </Box>
   )
 }
 

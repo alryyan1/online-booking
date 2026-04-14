@@ -2,7 +2,30 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { getAppointments } from '../../services/appointmentService'
 import { formatDate } from '../../utils/bookingUtils'
-import AppointmentStatusBadge from '../../components/appointment/AppointmentStatusBadge'
+import Box from '@mui/material/Box'
+import Card from '@mui/material/Card'
+import Typography from '@mui/material/Typography'
+import Button from '@mui/material/Button'
+import TextField from '@mui/material/TextField'
+import Table from '@mui/material/Table'
+import TableBody from '@mui/material/TableBody'
+import TableCell from '@mui/material/TableCell'
+import TableContainer from '@mui/material/TableContainer'
+import TableHead from '@mui/material/TableHead'
+import TableRow from '@mui/material/TableRow'
+import Chip from '@mui/material/Chip'
+import Stack from '@mui/material/Stack'
+import InputAdornment from '@mui/material/InputAdornment'
+import IconButton from '@mui/material/IconButton'
+import ToggleButton from '@mui/material/ToggleButton'
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
+import SearchIcon from '@mui/icons-material/Search'
+import ClearIcon from '@mui/icons-material/Clear'
+import PersonIcon from '@mui/icons-material/Person'
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
+import EventIcon from '@mui/icons-material/Event'
+import WbSunnyIcon from '@mui/icons-material/WbSunny'
+import NightsStayIcon from '@mui/icons-material/NightsStay'
 import Spinner from '../../components/common/Spinner'
 import toast from 'react-hot-toast'
 
@@ -11,256 +34,146 @@ const CallCenterAppointments = () => {
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('today')
-
-  // Filter states
   const [patientSearch, setPatientSearch] = useState('')
   const [doctorSearch, setDoctorSearch] = useState('')
   const [dateFilter, setDateFilter] = useState('')
-  const [periodFilter, setPeriodFilter] = useState('all') // 'all', 'morning', 'evening'
+  const [periodFilter, setPeriodFilter] = useState('all')
 
   const todayStr = formatDate(new Date())
 
   useEffect(() => {
-    if (!facilityId) {
-      setLoading(false)
-      return
-    }
-
+    if (!facilityId) { setLoading(false); return }
     getAppointments(facilityId)
       .then(setAppointments)
-      .catch((err) => {
-        console.error(err)
-        toast.error('حدث خطأ أثناء تحميل المواعيد')
-      })
+      .catch((err) => { console.error(err); toast.error('حدث خطأ أثناء تحميل المواعيد') })
       .finally(() => setLoading(false))
   }, [facilityId])
 
-  // Multi-step filtering
   const filteredAppointments = appointments.filter((apt) => {
-    // 1. Tab Filter
     if (activeTab === 'today' && apt.date !== todayStr) return false
-
-    // 2. Date Filter (Custom)
     if (dateFilter && apt.date !== dateFilter) return false
-
-    // 3. Period Filter
     if (periodFilter !== 'all' && apt.period !== periodFilter) return false
-
-    // 4. Patient Search
     if (patientSearch.trim()) {
-      const search = patientSearch.toLowerCase()
-      const matchesPatient = apt.patientName?.toLowerCase().includes(search)
-      const matchesPhone = apt.patientPhone?.includes(search)
-      if (!matchesPatient && !matchesPhone) return false
+      const s = patientSearch.toLowerCase()
+      if (!apt.patientName?.toLowerCase().includes(s) && !apt.patientPhone?.includes(s)) return false
     }
-
-    // 5. Doctor/Spec Search
     if (doctorSearch.trim()) {
-      const search = doctorSearch.toLowerCase()
-      const matchesDoctor = apt.doctorName?.toLowerCase().includes(search)
-      const matchesSpec = apt.specializationName?.toLowerCase().includes(search)
-      if (!matchesDoctor && !matchesSpec) return false
+      const s = doctorSearch.toLowerCase()
+      if (!apt.doctorName?.toLowerCase().includes(s) && !apt.specializationName?.toLowerCase().includes(s)) return false
     }
-
     return true
   })
 
-  // Counts for the summary
   const counts = {
-    today: appointments.filter(apt => apt.date === todayStr).length,
+    today: appointments.filter((a) => a.date === todayStr).length,
     all: appointments.length,
-    filtered: filteredAppointments.length
+    filtered: filteredAppointments.length,
   }
 
-  const clearFilters = () => {
-    setPatientSearch('')
-    setDoctorSearch('')
-    setDateFilter('')
-    setPeriodFilter('all')
-  }
+  const hasFilters = patientSearch || doctorSearch || dateFilter || periodFilter !== 'all'
+  const clearFilters = () => { setPatientSearch(''); setDoctorSearch(''); setDateFilter(''); setPeriodFilter('all') }
 
-  if (loading) return (
-    <div className="flex items-center justify-center p-20">
-      <Spinner size="lg" />
-    </div>
-  )
+  if (loading) return <Spinner size="lg" />
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <header className="mb-10 text-right">
-        <h1 className="text-2xl font-black text-gray-800">إدارة المواعيد</h1>
-        <p className="text-gray-500 mt-1">تتبع وعرض وتحليل المواعيد المسجلة.</p>
-      </header>
+    <Box sx={{ maxWidth: 1300, mx: 'auto', px: 3, py: 5 }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h5" fontWeight={700}>إدارة المواعيد</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>تتبع وعرض وتحليل المواعيد المسجلة.</Typography>
+      </Box>
 
       {/* Filter Toolbar */}
-      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm mb-8 space-y-6 text-right">
-        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+      <Card variant="outlined" sx={{ p: 2.5, mb: 3 }}>
+        <Stack spacing={2}>
+          <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} alignItems={{ lg: 'center' }} justifyContent="space-between">
+            <Stack direction="row" spacing={0.5} sx={{ bgcolor: 'grey.100', p: 0.5, borderRadius: 2, width: { xs: '100%', lg: 'auto' } }}>
+              {[
+                { key: 'today', label: `مواعيد اليوم (${counts.today})` },
+                { key: 'all', label: `جميع المواعيد (${counts.all})` },
+              ].map((t) => (
+                <Button key={t.key} size="small" variant={activeTab === t.key ? 'contained' : 'text'} onClick={() => { setActiveTab(t.key); if (t.key === 'today') setDateFilter('') }}
+                  sx={{ flex: 1, borderRadius: 1.5, color: activeTab === t.key ? undefined : 'text.secondary' }}>
+                  {t.label}
+                </Button>
+              ))}
+            </Stack>
 
-          {/* Tab Switcher */}
-          <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl w-full lg:w-fit flex-row-reverse">
-            <button
-              onClick={() => { setActiveTab('today'); setDateFilter('') }}
-              className={`flex-1 lg:px-6 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'today' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-                }`}
-            >
-              مواعيد اليوم ({counts.today})
-            </button>
-            <button
-              onClick={() => setActiveTab('all')}
-              className={`flex-1 lg:px-6 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'all' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-                }`}
-            >
-              جميع المواعيد ({counts.all})
-            </button>
-          </div>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} flex={1} justifyContent="flex-end" flexWrap="wrap">
+              <TextField size="small" placeholder="اسم المريض أو الهاتف..." value={patientSearch} onChange={(e) => setPatientSearch(e.target.value)}
+                InputProps={{ startAdornment: <InputAdornment position="start"><PersonIcon fontSize="small" /></InputAdornment> }} sx={{ minWidth: 180 }} />
+              <TextField size="small" placeholder="الطبيب أو التخصص..." value={doctorSearch} onChange={(e) => setDoctorSearch(e.target.value)}
+                InputProps={{ startAdornment: <InputAdornment position="start"><MedicalServicesIcon fontSize="small" /></InputAdornment> }} sx={{ minWidth: 180 }} />
+              <ToggleButtonGroup size="small" value={periodFilter} exclusive onChange={(_, v) => v && setPeriodFilter(v)}>
+                <ToggleButton value="all">الكل</ToggleButton>
+                <ToggleButton value="morning"><WbSunnyIcon fontSize="small" sx={{ mr: 0.5 }} />صباحاً</ToggleButton>
+                <ToggleButton value="evening"><NightsStayIcon fontSize="small" sx={{ mr: 0.5 }} />مساءً</ToggleButton>
+              </ToggleButtonGroup>
+              <TextField type="date" size="small" value={dateFilter} onChange={(e) => { setDateFilter(e.target.value); if (e.target.value) setActiveTab('all') }} sx={{ width: 160 }} inputProps={{ dir: 'ltr' }} />
+              {hasFilters && <IconButton size="small" color="error" onClick={clearFilters}><ClearIcon /></IconButton>}
+            </Stack>
+          </Stack>
 
-          {/* Search & Date Controls */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full lg:flex-1 lg:justify-end flex-wrap">
-            {/* Patient Search */}
-            <div className="relative sm:flex-1 w-full group">
-              <input
-                type="text"
-                placeholder="ابحث باسم المريض أو الهاتف..."
-                value={patientSearch}
-                onChange={(e) => setPatientSearch(e.target.value)}
-                className="w-full text-right bg-gray-50 border-2 border-gray-50 rounded-2xl pl-4 pr-10 py-2.5 text-sm focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-medium"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors text-xs">👤</span>
-            </div>
-
-            {/* Doctor Search */}
-            <div className="relative sm:flex-1 w-full group">
-              <input
-                type="text"
-                placeholder="ابحث باسم الطبيب أو التخصص..."
-                value={doctorSearch}
-                onChange={(e) => setDoctorSearch(e.target.value)}
-                className="w-full text-right bg-gray-50 border-2 border-gray-50 rounded-2xl pl-4 pr-10 py-2.5 text-sm focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-medium"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors text-xs">👨‍⚕️</span>
-            </div>
-
-            {/* Period Filter Toggle */}
-            <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl w-full sm:w-auto flex-row-reverse">
-              <button
-                onClick={() => setPeriodFilter('all')}
-                className={`flex-1 sm:px-4 py-2 rounded-xl text-[10px] font-black transition-all ${periodFilter === 'all' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-                  }`}
-              >
-                الكل
-              </button>
-              <button
-                onClick={() => setPeriodFilter('morning')}
-                className={`flex-1 sm:px-4 py-2 rounded-xl text-[10px] font-black transition-all flex items-center gap-1 justify-center ${periodFilter === 'morning' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-                  }`}
-              >
-                <span className="text-[12px]">☀️</span>
-                <span>صباحاً</span>
-              </button>
-              <button
-                onClick={() => setPeriodFilter('evening')}
-                className={`flex-1 sm:px-4 py-2 rounded-xl text-[10px] font-black transition-all flex items-center gap-1 justify-center ${periodFilter === 'evening' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-                  }`}
-              >
-                <span className="text-[12px]">🌙</span>
-                <span>مساءً</span>
-              </button>
-            </div>
-
-            {/* Date Filter */}
-            <div className="relative w-full sm:w-auto group">
-              <input
-                type="date"
-                value={dateFilter}
-                onChange={(e) => {
-                  setDateFilter(e.target.value)
-                  if (e.target.value) setActiveTab('all')
-                }}
-                className="w-full bg-gray-50 border-2 border-gray-50 rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-bold text-gray-700"
-              />
-            </div>
-
-            {/* Reset Button */}
-            {(patientSearch || doctorSearch || dateFilter || periodFilter !== 'all') && (
-              <button
-                onClick={clearFilters}
-                className="bg-red-50 text-red-500 px-4 py-2.5 rounded-2xl text-xs font-black hover:bg-red-100 transition-colors"
-              >
-                X
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Results summary bar */}
-        {(patientSearch || doctorSearch || dateFilter || periodFilter !== 'all') && (
-          <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-            <span className="text-xs font-bold text-gray-400">نتائج البحث: <span className="text-blue-600">{counts.filtered}</span> موعد</span>
-            <div className="flex gap-2">
+          {hasFilters && (
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ borderTop: 1, borderColor: 'divider', pt: 1.5 }}>
+              <Typography variant="caption" color="text.secondary">
+                نتائج البحث: <Box component="span" color="primary.main" fontWeight={700}>{counts.filtered}</Box> موعد
+              </Typography>
               {periodFilter !== 'all' && (
-                <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${periodFilter === 'morning' ? 'bg-orange-50 text-orange-600' : 'bg-indigo-50 text-indigo-600'
-                  }`}>
-                  {periodFilter === 'morning' ? '☀️ صباحاً' : '🌙 مساءً'}
-                </span>
+                <Chip size="small" icon={periodFilter === 'morning' ? <WbSunnyIcon /> : <NightsStayIcon />}
+                  label={periodFilter === 'morning' ? 'صباحاً' : 'مساءً'}
+                  color={periodFilter === 'morning' ? 'warning' : 'secondary'} variant="outlined" />
               )}
-            </div>
-          </div>
-        )}
-      </div>
+            </Stack>
+          )}
+        </Stack>
+      </Card>
 
       {filteredAppointments.length === 0 ? (
-        <div className="text-center text-gray-400 py-32 bg-white rounded-3xl border-2 border-dashed border-gray-100 shadow-sm transition-all">
-          <div className="text-6xl mb-4 opacity-10">🔎</div>
-          <p className="text-xl font-bold">لا توجد نتائج تطابق بحثك</p>
-          {(patientSearch || doctorSearch || dateFilter) && (
-            <button onClick={clearFilters} className="mt-4 text-blue-600 font-bold hover:underline">عرض جميع المواعيد ←</button>
-          )}
-        </div>
+        <Card sx={{ textAlign: 'center', py: 10 }}>
+          <EventIcon sx={{ fontSize: 60, color: 'grey.300', mb: 2 }} />
+          <Typography color="text.secondary">لا توجد مواعيد تطابق بحثك</Typography>
+          {hasFilters && <Button onClick={clearFilters} size="small" sx={{ mt: 1 }}>عرض جميع المواعيد</Button>}
+        </Card>
       ) : (
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-700">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-right">
-              <thead className="bg-gray-50/80 text-gray-500 border-b border-gray-100">
-                <tr>
-                  <th className="px-6 py-5 font-black text-[10px] uppercase tracking-widest text-right">المريض / الهاتف</th>
-                  <th className="px-6 py-5 font-black text-[10px] uppercase tracking-widest hidden sm:table-cell text-right">الطبيب / التخصص</th>
-                  <th className="px-6 py-5 font-black text-[10px] uppercase tracking-widest hidden md:table-cell text-right">التاريخ</th>
-                  <th className="px-6 py-5 font-black text-[10px] uppercase tracking-widest hidden md:table-cell text-right">الوقت</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
+        <Card>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>المريض / الهاتف</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>الطبيب / التخصص</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>التاريخ</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>الوقت</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {filteredAppointments.map((apt) => (
-                  <tr key={apt.id} className="hover:bg-blue-50/20 transition-all group">
-                    <td className="px-6 py-5 text-right">
-                      <div className="font-bold text-gray-800 group-hover:text-blue-700 transition-colors">{apt.patientName || '-'}</div>
-                      <div className="text-xs text-blue-500 font-medium mt-1" dir="ltr">{apt.patientPhone || '-'}</div>
-                    </td>
-                    <td className="px-6 py-5 hidden sm:table-cell text-right">
-                      <div className="font-bold text-gray-700">{apt.doctorName || '-'}</div>
-                      <div className="text-[10px] text-gray-400 font-bold mt-1 uppercase leading-none">{apt.specializationName || '-'}</div>
-                    </td>
-                    <td className="px-6 py-5 hidden md:table-cell text-right">
-                      <div className={`px-4 py-1.5 rounded-xl text-[11px] font-black inline-block ${apt.date === todayStr ? 'bg-red-50 text-red-600 ring-1 ring-red-100 shadow-sm' : 'bg-gray-50 text-gray-600'}`} dir="ltr">
-                        {apt.date || '-'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 hidden md:table-cell text-right">
-                      <div className="flex flex-col items-start gap-2">
-                        <span className={`px-3 py-0.5 rounded text-[8px] font-black uppercase ${apt.period === 'morning' ? 'bg-orange-50 text-orange-600' : 'bg-indigo-50 text-indigo-600'
-                          }`}>
-                          {apt.period === 'morning' ? 'صباحاً' : apt.period === 'evening' ? 'مساءً' : '-'}
-                        </span>
-                        <span className="font-black text-gray-900 text-xs" dir="ltr">{apt.time || apt.timeSlot || '-'}</span>
-                      </div>
-                    </td>
-                  </tr>
+                  <TableRow key={apt.id} hover>
+                    <TableCell>
+                      <Typography fontWeight={600}>{apt.patientName || '—'}</Typography>
+                      <Typography variant="caption" color="primary" dir="ltr">{apt.patientPhone || ''}</Typography>
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                      <Typography variant="body2" fontWeight={600}>{apt.doctorName || '—'}</Typography>
+                      <Typography variant="caption" color="text.secondary">{apt.specializationName || ''}</Typography>
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                      <Chip size="small" label={apt.date || '—'} color={apt.date === todayStr ? 'error' : 'default'} variant={apt.date === todayStr ? 'filled' : 'outlined'} />
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                      <Chip size="small" icon={apt.period === 'morning' ? <WbSunnyIcon /> : <NightsStayIcon />}
+                        label={apt.period === 'morning' ? 'صباحاً' : apt.period === 'evening' ? 'مساءً' : '—'}
+                        color={apt.period === 'morning' ? 'warning' : 'secondary'} variant="outlined" />
+                      <Typography variant="caption" display="block" dir="ltr">{apt.time || apt.timeSlot || ''}</Typography>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
       )}
-    </div>
+    </Box>
   )
 }
 

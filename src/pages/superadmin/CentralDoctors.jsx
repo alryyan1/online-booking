@@ -1,55 +1,32 @@
 import { useEffect, useState } from 'react'
-import {
-  getCentralDoctors,
-  createCentralDoctor,
-  updateCentralDoctor,
-  deleteCentralDoctor,
-} from '../../services/doctorService'
-import { getSpecialties } from '../../services/specialtyService'
+import Box from '@mui/material/Box'
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
+import Typography from '@mui/material/Typography'
+import Button from '@mui/material/Button'
+import TextField from '@mui/material/TextField'
+import MenuItem from '@mui/material/MenuItem'
+import Table from '@mui/material/Table'
+import TableBody from '@mui/material/TableBody'
+import TableCell from '@mui/material/TableCell'
+import TableContainer from '@mui/material/TableContainer'
+import TableHead from '@mui/material/TableHead'
+import TableRow from '@mui/material/TableRow'
+import Avatar from '@mui/material/Avatar'
+import Stack from '@mui/material/Stack'
+import Grid from '@mui/material/Grid'
+import InputAdornment from '@mui/material/InputAdornment'
+import DialogActions from '@mui/material/DialogActions'
+import SearchIcon from '@mui/icons-material/Search'
+import PersonIcon from '@mui/icons-material/Person'
+import AddIcon from '@mui/icons-material/Add'
 import Modal from '../../components/common/Modal'
 import Spinner from '../../components/common/Spinner'
+import { getCentralDoctors, createCentralDoctor, updateCentralDoctor, deleteCentralDoctor } from '../../services/doctorService'
+import { getSpecialties } from '../../services/specialtyService'
 import toast from 'react-hot-toast'
 
-const DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
-
 const EMPTY = { name: '', specialization: '', phoneNumber: '' }
-
-const DoctorFormFields = ({ form, setForm, specialties = [] }) => {
-  const handle = (e) => {
-    const { name, value, type, checked } = e.target
-    setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }))
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">اسم الطبيب *</label>
-          <input name="name" value={form.name} onChange={handle} required placeholder="د. محمد أحمد"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">التخصص</label>
-          {specialties.length > 0 ? (
-            <select name="specialization" value={form.specialization} onChange={handle}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">اختر التخصص...</option>
-              {specialties.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          ) : (
-            <input name="specialization" value={form.specialization} onChange={handle} placeholder="طب عام، قلب، عظام..."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          )}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">رقم الهاتف</label>
-          <input name="phoneNumber" value={form.phoneNumber} onChange={handle} dir="ltr" placeholder="+966 5X XXX XXXX"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
-      </div>
-    </div>
-  )
-}
 
 const CentralDoctors = () => {
   const [doctors, setDoctors] = useState([])
@@ -63,18 +40,12 @@ const CentralDoctors = () => {
 
   const load = async () => {
     setLoading(true)
-    const [docsData, specsData] = await Promise.all([
-      getCentralDoctors(),
-      getSpecialties()
-    ])
-    setDoctors(docsData)
-    setSpecialties(specsData)
-    setLoading(false)
+    const [docsData, specsData] = await Promise.all([getCentralDoctors(), getSpecialties()])
+    setDoctors(docsData); setSpecialties(specsData); setLoading(false)
   }
-
   useEffect(() => { load() }, [])
 
-  const getSpecialtyName = (id) => specialties.find(s => String(s.id) === String(id))?.name || id
+  const getSpecialtyName = (id) => specialties.find((s) => String(s.id) === String(id))?.name || id
 
   const filtered = search.trim()
     ? doctors.filter((d) =>
@@ -87,139 +58,126 @@ const CentralDoctors = () => {
   const openEdit = (d) => { setForm({ ...EMPTY, ...d }); setEditTarget(d); setModalOpen(true) }
   const closeModal = () => { setModalOpen(false); setEditTarget(null) }
 
+  const handleField = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.name.trim()) { toast.error('اسم الطبيب مطلوب'); return }
     setSaving(true)
     try {
-      if (editTarget) {
-        await updateCentralDoctor(editTarget.id, form)
-        toast.success('تم تحديث بيانات الطبيب')
-      } else {
-        console.log(form,'form')
-        await createCentralDoctor(form)
-        toast.success('تم إضافة الطبيب بنجاح')
-      }
-      closeModal()
-      load()
-    } catch {
-      toast.error('حدث خطأ، يرجى المحاولة')
-    } finally {
-      setSaving(false)
-    }
+      if (editTarget) { await updateCentralDoctor(editTarget.id, form); toast.success('تم تحديث بيانات الطبيب') }
+      else { await createCentralDoctor(form); toast.success('تم إضافة الطبيب') }
+      closeModal(); load()
+    } catch { toast.error('حدث خطأ، يرجى المحاولة') }
+    finally { setSaving(false) }
   }
 
-  const handleDelete = async (doctor) => {
-    if (!window.confirm(`هل أنت متأكد من حذف "${doctor.name}"؟`)) return
-    try {
-      await deleteCentralDoctor(doctor.id)
-      toast.success('تم حذف الطبيب')
-      load()
-    } catch {
-      toast.error('حدث خطأ أثناء الحذف')
-    }
+  const handleDelete = async (d) => {
+    if (!window.confirm(`هل أنت متأكد من حذف "${d.name}"؟`)) return
+    try { await deleteCentralDoctor(d.id); toast.success('تم حذف الطبيب'); load() }
+    catch { toast.error('حدث خطأ أثناء الحذف') }
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">الأطباء المركزيون</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            {doctors.length} طبيب إجمالي
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="بحث بالاسم أو التخصص..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-52"
-          />
-          <button
-            onClick={openAdd}
-            className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm whitespace-nowrap"
-          >
-            + إضافة طبيب
-          </button>
-        </div>
-      </div>
+    <Box sx={{ maxWidth: 1100, mx: 'auto', px: 3, py: 5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 4 }}>
+        <Box>
+          <Typography variant="h5" fontWeight={700}>الأطباء المركزيون</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{doctors.length} طبيب إجمالي</Typography>
+        </Box>
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <TextField size="small" placeholder="بحث بالاسم أو التخصص..." value={search} onChange={(e) => setSearch(e.target.value)}
+            InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} sx={{ width: 230 }} />
+          <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>إضافة طبيب</Button>
+        </Stack>
+      </Box>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-blue-50 rounded-2xl p-5">
-          <div className="text-3xl mb-1">👨‍⚕️</div>
-          <div className="text-2xl font-bold text-blue-700">{doctors.length}</div>
-          <div className="text-xs text-blue-600 font-medium">إجمالي الأطباء المركزين</div>
-        </div>
-      </div>
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={4}>
+          <Card sx={{ bgcolor: 'primary.50', boxShadow: 'none', border: 1, borderColor: 'primary.200' }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Typography variant="h4" fontWeight={700} color="primary.main">{doctors.length}</Typography>
+              <Typography variant="body2" fontWeight={500} color="primary.dark">إجمالي الأطباء المركزين</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-      {/* Table */}
-      {loading ? (
-        <Spinner size="lg" className="py-20" />
-      ) : filtered.length === 0 ? (
-        <div className="text-center text-gray-400 py-20 bg-white rounded-2xl shadow-sm">
-          <div className="text-6xl mb-4">👨‍⚕️</div>
-          <p className="text-lg">{search ? 'لا توجد نتائج للبحث' : 'لا يوجد أطباء بعد'}</p>
-        </div>
+      {loading ? <Spinner size="lg" /> : filtered.length === 0 ? (
+        <Card sx={{ textAlign: 'center', py: 8 }}>
+          <PersonIcon sx={{ fontSize: 60, color: 'grey.300', mb: 2 }} />
+          <Typography color="text.secondary">{search ? 'لا توجد نتائج' : 'لا يوجد أطباء بعد'}</Typography>
+        </Card>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600 text-right">
-              <tr>
-                <th className="px-5 py-3 font-medium">الطبيب</th>
-                <th className="px-5 py-3 font-medium hidden sm:table-cell">التخصص</th>
-                <th className="px-5 py-3 font-medium hidden md:table-cell">رقم الهاتف</th>
-                <th className="px-5 py-3 font-medium">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.map((doctor) => (
-                <tr key={doctor.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl flex-shrink-0 overflow-hidden">
-                        👨‍⚕️
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-800">{doctor.name}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3 text-gray-500 hidden sm:table-cell">{getSpecialtyName(doctor.specialization) || '-'}</td>
-                  <td className="px-5 py-3 text-gray-500 hidden md:table-cell" dir="ltr">{doctor.phoneNumber || '-'}</td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => openEdit(doctor)} className="text-blue-600 hover:text-blue-800 font-medium text-xs">تعديل</button>
-                      <button onClick={() => handleDelete(doctor)} className="text-red-500 hover:text-red-700 font-medium text-xs">حذف</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Card>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>الطبيب</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>التخصص</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>رقم الهاتف</TableCell>
+                  <TableCell>إجراءات</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filtered.map((d) => (
+                  <TableRow key={d.id} hover>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Avatar sx={{ bgcolor: 'primary.100', width: 36, height: 36 }}><PersonIcon fontSize="small" color="primary" /></Avatar>
+                        <Typography fontWeight={600}>{d.name}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                      <Typography variant="body2" color="text.secondary">{getSpecialtyName(d.specialization) || '—'}</Typography>
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }} dir="ltr">
+                      <Typography variant="body2">{d.phoneNumber || '—'}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <Button size="small" onClick={() => openEdit(d)}>تعديل</Button>
+                        <Button size="small" color="error" onClick={() => handleDelete(d)}>حذف</Button>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
       )}
 
-      {/* Modal */}
-      <Modal isOpen={modalOpen} onClose={closeModal} title={editTarget ? 'تعديل بيانات الطبيب' : 'إضافة طبيب جديد'} size="lg">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <DoctorFormFields form={form} setForm={setForm} specialties={specialties} />
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={closeModal}
-              className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg hover:bg-gray-50 transition">
-              إلغاء
-            </button>
-            <button type="submit" disabled={saving}
-              className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50">
+      <Modal isOpen={modalOpen} onClose={closeModal} title={editTarget ? 'تعديل بيانات الطبيب' : 'إضافة طبيب جديد'} size="md">
+        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField label="اسم الطبيب *" name="name" value={form.name} onChange={handleField} required fullWidth placeholder="د. محمد أحمد" />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              {specialties.length > 0 ? (
+                <TextField select label="التخصص" name="specialization" value={form.specialization} onChange={handleField} fullWidth>
+                  <MenuItem value="">اختر التخصص...</MenuItem>
+                  {specialties.map((s) => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
+                </TextField>
+              ) : (
+                <TextField label="التخصص" name="specialization" value={form.specialization} onChange={handleField} fullWidth placeholder="طب عام، قلب..." />
+              )}
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField label="رقم الهاتف" name="phoneNumber" value={form.phoneNumber} onChange={handleField} fullWidth inputProps={{ dir: 'ltr' }} />
+            </Grid>
+          </Grid>
+          <DialogActions sx={{ px: 0, pb: 0 }}>
+            <Button onClick={closeModal} variant="outlined" color="inherit">إلغاء</Button>
+            <Button type="submit" variant="contained" disabled={saving}>
               {saving ? 'جاري الحفظ...' : editTarget ? 'حفظ التعديلات' : 'إضافة الطبيب'}
-            </button>
-          </div>
-        </form>
+            </Button>
+          </DialogActions>
+        </Box>
       </Modal>
-    </div>
+    </Box>
   )
 }
 

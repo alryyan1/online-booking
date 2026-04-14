@@ -1,4 +1,11 @@
+import MuiDialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import IconButton from '@mui/material/IconButton'
+import CloseIcon from '@mui/icons-material/Close'
 import { useEffect } from 'react'
+
+const sizeMap = { sm: 'xs', md: 'sm', lg: 'md', xl: 'lg', '2xl': 'xl' }
 
 const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
   useEffect(() => {
@@ -7,36 +14,24 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
-  if (!isOpen) return null
-
-  const sizes = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-  }
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-      onClick={onClose}
+    <MuiDialog
+      open={!!isOpen}
+      onClose={onClose}
+      maxWidth={sizeMap[size] ?? 'sm'}
+      fullWidth
+      scroll="paper"
     >
-      <div
-        className={`bg-white rounded-2xl shadow-2xl w-full ${sizes[size]} max-h-[90vh] overflow-y-auto`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between p-5 border-b">
-          <h2 className="text-lg font-bold text-gray-800">{title}</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="p-5">{children}</div>
-      </div>
-    </div>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
+        {title}
+        <IconButton onClick={onClose} size="small" edge="end" aria-label="إغلاق">
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
+        {children}
+      </DialogContent>
+    </MuiDialog>
   )
 }
 

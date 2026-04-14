@@ -14,6 +14,11 @@ import { COLLECTIONS } from '../utils/constants'
 
 const ref = () => collection(db, COLLECTIONS.USERS)
 
+export const getAllUsers = async () => {
+  const snap = await getDocs(ref())
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
 export const getUsersByFacility = async (facilityId) => {
   const q = query(ref(), where('centerId', '==', facilityId))
   const snap = await getDocs(q)

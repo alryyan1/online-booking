@@ -1,13 +1,31 @@
 import { useEffect, useState, useRef } from 'react'
-import { useParams, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import { useAuth } from '../../contexts/AuthContext'
-import {
-  getSpecializations,
-  getDoctorsBySpec,
-} from '../../services/facilityService'
+import { getSpecializations, getDoctorsBySpec } from '../../services/facilityService'
+import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
+import Button from '@mui/material/Button'
+import TextField from '@mui/material/TextField'
+import Card from '@mui/material/Card'
+import Avatar from '@mui/material/Avatar'
+import Chip from '@mui/material/Chip'
+import Stack from '@mui/material/Stack'
+import Grid from '@mui/material/Grid'
+import Collapse from '@mui/material/Collapse'
+import InputAdornment from '@mui/material/InputAdornment'
+import IconButton from '@mui/material/IconButton'
+import Divider from '@mui/material/Divider'
+import SearchIcon from '@mui/icons-material/Search'
+import ClearIcon from '@mui/icons-material/Clear'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import PeopleIcon from '@mui/icons-material/People'
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
+import WbSunnyIcon from '@mui/icons-material/WbSunny'
+import NightsStayIcon from '@mui/icons-material/NightsStay'
+import PersonIcon from '@mui/icons-material/Person'
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
 import Spinner from '../../components/common/Spinner'
 
 const DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
@@ -24,18 +42,13 @@ const CallCenterSchedule = () => {
   const reportRef = useRef(null)
 
   const loadSpecsAndAllDoctors = async () => {
-    if (!facilityId) {
-      setLoading(false)
-      return
-    }
+    if (!facilityId) { setLoading(false); return }
     setLoading(true)
     try {
-      // 1. Load Specs
       const specData = await getSpecializations(facilityId)
       const sortedSpecs = [...specData].sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
       setSpecs(sortedSpecs)
 
-      // 2. Load all doctors in parallel for better search experience
       const doctorPromises = sortedSpecs.map(async (spec) => {
         try {
           const docs = await getDoctorsBySpec(facilityId, spec.id)
@@ -48,11 +61,8 @@ const CallCenterSchedule = () => {
 
       const results = await Promise.all(doctorPromises)
       const newDocsBySpec = {}
-      results.forEach(({ specId, docs }) => {
-        newDocsBySpec[specId] = docs
-      })
+      results.forEach(({ specId, docs }) => { newDocsBySpec[specId] = docs })
       setDoctorsBySpec(newDocsBySpec)
-
     } catch (err) {
       console.error(err)
       toast.error('حدث خطأ أثناء تحميل البيانات')
@@ -65,58 +75,39 @@ const CallCenterSchedule = () => {
   const toggleExpand = (specId) => {
     setExpandedIds((prev) => {
       const next = new Set(prev)
-      if (next.has(specId)) {
-        next.delete(specId)
-      } else {
-        next.add(specId)
-      }
+      if (next.has(specId)) next.delete(specId)
+      else next.add(specId)
       return next
     })
   }
 
-  // Smart filtering logic
-  const filteredSpecs = specs.filter(spec => {
+  const filteredSpecs = specs.filter((spec) => {
     if (!searchTerm.trim()) return true
-
     const term = searchTerm.toLowerCase()
     const specMatches = spec.specName.toLowerCase().includes(term)
-
     const docs = doctorsBySpec[spec.id] || []
-    const docMatches = docs.some(d =>
-      d.docName.toLowerCase().includes(term) ||
-      d.phoneNumber?.includes(term)
-    )
-
+    const docMatches = docs.some((d) => d.docName.toLowerCase().includes(term) || d.phoneNumber?.includes(term))
     return specMatches || docMatches
   })
 
-  // Auto-expand logically during search
   useEffect(() => {
     if (searchTerm.trim()) {
       const matchingIds = new Set()
-      filteredSpecs.forEach(s => matchingIds.add(s.id))
+      filteredSpecs.forEach((s) => matchingIds.add(s.id))
       setExpandedIds(matchingIds)
     }
   }, [searchTerm])
 
   const handleDownloadPDF = async () => {
     if (!specs.length) return
-
     setIsExporting(true)
     const toastId = toast.loading('جاري إنشاء التقرير الشامل...', { id: 'pdf-gen' })
-
     try {
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: 'a4'
-      })
-
+      const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' })
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const margin = 10
-      const contentWidth = pdfWidth - (margin * 2)
+      const contentWidth = pdfWidth - margin * 2
 
-      // We will capture each specialization section individually to ensure nothing is cut off
       const reportEl = reportRef.current
       reportEl.style.display = 'block'
       reportEl.style.position = 'absolute'
@@ -124,41 +115,22 @@ const CallCenterSchedule = () => {
       reportEl.style.width = `${contentWidth}mm`
 
       const specSections = reportEl.querySelectorAll('.spec-report-section')
-
-      let currentY = 15 // Track Y position
+      let currentY = 15
 
       for (let i = 0; i < specSections.length; i++) {
         const section = specSections[i]
-
-        // Update toast progress (Header is index 0)
         const progressText = i === 0
           ? 'جاري معالجة عنوان التقرير...'
           : `جاري معالجة تخصص: ${specs[i - 1]?.specName || ''} (${i}/${specs.length})`
-
         toast.loading(progressText, { id: toastId })
 
-        const canvas = await html2canvas(section, {
-          scale: 2,
-          useCORS: false,
-          backgroundColor: '#ffffff',
-          windowWidth: 1200
-        })
-
+        const canvas = await html2canvas(section, { scale: 2, useCORS: false, backgroundColor: '#ffffff', windowWidth: 1200 })
         const imgData = canvas.toDataURL('image/png')
         const imgProps = pdf.getImageProperties(imgData)
         const itemHeight = (imgProps.height * contentWidth) / imgProps.width
 
-        // Logic for page breaks:
-        // i=0 is Header, i=1 is First Spec. We want them on the same page.
-        // i > 1 means Second Spec onwards, we start a new page.
-        if (i > 1) {
-          pdf.addPage()
-          currentY = 15
-        }
-
+        if (i > 1) { pdf.addPage(); currentY = 15 }
         pdf.addImage(imgData, 'PNG', margin, currentY, contentWidth, itemHeight)
-
-        // Increase currentY for the next element on the SAME page (only happens after Header)
         currentY += itemHeight + 5
       }
 
@@ -175,38 +147,49 @@ const CallCenterSchedule = () => {
 
   const renderScheduleDetail = (schedule) => {
     if (!schedule || Object.keys(schedule).length === 0) {
-      return <p className="text-[10px] text-gray-400 italic">لا يوجد جدول عمل محدد</p>
+      return <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>لا يوجد جدول عمل محدد</Typography>
+    }
+
+    const activeDays = DAYS.filter((day) => {
+      const d = schedule[day]
+      return d && (d.morning || d.evening)
+    })
+
+    if (activeDays.length === 0) {
+      return <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic' }}>لا يوجد جدول عمل محدد</Typography>
     }
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-2">
-        {DAYS.map((day) => {
+      <Grid container spacing={1} sx={{ mt: 1 }}>
+        {activeDays.map((day) => {
           const daySchedule = schedule[day]
-          if (!daySchedule || (!daySchedule.morning && !daySchedule.evening)) return null
-
           return (
-            <div key={day} className="bg-gray-50/50 p-2 rounded-xl border border-gray-100 flex flex-col justify-between">
-              <p className="text-[10px] font-black text-gray-400 mb-1 border-b border-gray-100/50 pb-1">{day}</p>
-              <div className="space-y-1">
-                {daySchedule.morning && (
-                  <div className="flex items-center gap-1.5 text-[9px]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shadow-[0_0_4px_rgba(251,146,60,0.4)]"></span>
-                    <span className="text-gray-400 font-bold">صباحاً:</span>
-                    <span className="font-black text-gray-700" dir="ltr">{daySchedule.morning.start} - {daySchedule.morning.end}</span>
-                  </div>
-                )}
-                {daySchedule.evening && (
-                  <div className="flex items-center gap-1.5 text-[9px]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_4px_rgba(129,140,248,0.4)]"></span>
-                    <span className="text-gray-400 font-bold">مساءً:</span>
-                    <span className="font-black text-gray-700" dir="ltr">{daySchedule.evening.start} - {daySchedule.evening.end}</span>
-                  </div>
-                )}
-              </div>
-            </div>
+            <Grid item xs={6} sm={4} md={3} key={day}>
+              <Box sx={{ bgcolor: 'grey.50', border: 1, borderColor: 'divider', borderRadius: 2, p: 1.5 }}>
+                <Typography variant="caption" fontWeight={700} color="text.disabled" sx={{ display: 'block', mb: 0.5, borderBottom: 1, borderColor: 'divider', pb: 0.5 }}>
+                  {day}
+                </Typography>
+                <Stack spacing={0.5}>
+                  {daySchedule.morning && (
+                    <Stack direction="row" alignItems="center" spacing={0.75}>
+                      <WbSunnyIcon sx={{ fontSize: 10, color: 'orange' }} />
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>صباحاً:</Typography>
+                      <Typography variant="caption" fontWeight={700} dir="ltr">{daySchedule.morning.start} - {daySchedule.morning.end}</Typography>
+                    </Stack>
+                  )}
+                  {daySchedule.evening && (
+                    <Stack direction="row" alignItems="center" spacing={0.75}>
+                      <NightsStayIcon sx={{ fontSize: 10, color: 'indigo' }} />
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>مساءً:</Typography>
+                      <Typography variant="caption" fontWeight={700} dir="ltr">{daySchedule.evening.start} - {daySchedule.evening.end}</Typography>
+                    </Stack>
+                  )}
+                </Stack>
+              </Box>
+            </Grid>
           )
         })}
-      </div>
+      </Grid>
     )
   }
 
@@ -214,58 +197,51 @@ const CallCenterSchedule = () => {
     if (!daySchedule) return '-'
     const morning = daySchedule.morning
     const evening = daySchedule.evening
-
     if (!morning && !evening) return '-'
-
     const m = morning ? `ص: ${morning.start}-${morning.end}` : ''
     const e = evening ? `م: ${evening.start}-${evening.end}` : ''
     return [m, e].filter(Boolean).join('\n')
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center p-20">
-      <Spinner size="lg" />
-    </div>
-  )
+  if (loading) return <Spinner size="lg" />
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 text-right">
-      <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-black text-gray-800">جدول عمل الأطباء</h1>
-            <button
+    <Box sx={{ maxWidth: 1300, mx: 'auto', px: 3, py: 5 }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 5 }}>
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 0.5 }}>
+            <Typography variant="h5" fontWeight={700}>جدول عمل الأطباء</Typography>
+            <Button
+              variant="contained"
+              color="secondary"
+              size="small"
+              startIcon={<PictureAsPdfIcon />}
               onClick={handleDownloadPDF}
               disabled={isExporting}
-              className="bg-indigo-600 text-white px-5 py-2 rounded-full text-xs font-black flex items-center gap-2 hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
             >
-              <span>📊</span>
-              {isExporting ? 'جاري التحضير...' : 'تحميل Pdf'}
-            </button>
-          </div>
-          <p className="text-gray-500">مراجعة مواعيد دوام الأطباء في مختلف التخصصات.</p>
-        </div>
+              {isExporting ? 'جاري التحضير...' : 'تحميل PDF'}
+            </Button>
+          </Stack>
+          <Typography variant="body2" color="text.secondary">مراجعة مواعيد دوام الأطباء في مختلف التخصصات.</Typography>
+        </Box>
 
-        {/* Global Search Interface */}
-        <div className="relative w-full md:max-w-md group">
-          <input
-            type="text"
-            placeholder="ابحث باسم الطبيب أو التخصص..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full text-right bg-white border-2 border-gray-100 rounded-2xl pl-4 pr-12 py-3.5 text-sm focus:outline-none focus:border-purple-500 focus:shadow-[0_0_15px_rgba(168,85,247,0.1)] transition-all font-bold placeholder:text-gray-300"
-          />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-purple-500 transition-colors text-xl">🔍</span>
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 transition-colors"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-      </header>
+        <TextField
+          size="small"
+          placeholder="ابحث باسم الطبيب أو التخصص..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
+            endAdornment: searchTerm ? (
+              <InputAdornment position="end">
+                <IconButton size="small" onClick={() => setSearchTerm('')}><ClearIcon fontSize="small" /></IconButton>
+              </InputAdornment>
+            ) : null,
+          }}
+          sx={{ width: { xs: '100%', md: 320 } }}
+        />
+      </Box>
 
       {/* Hidden Report View for PDF Capture */}
       <div ref={reportRef} style={{ display: 'none', width: '210mm', padding: '15mm', backgroundColor: '#fff', color: '#000', direction: 'rtl', fontFamily: 'Arial, sans-serif' }}>
@@ -273,8 +249,7 @@ const CallCenterSchedule = () => {
           <h1 style={{ fontSize: '24pt', fontWeight: 'bold' }}>تقرير جدول عمل الأطباء</h1>
           <p style={{ fontSize: '12pt' }}>تاريخ التقرير: {new Date().toLocaleDateString('ar-EG')}</p>
         </div>
-
-        {specs.map(spec => (
+        {specs.map((spec) => (
           <div key={spec.id} className="spec-report-section" style={{ marginBottom: '15mm', border: '1px solid #eee', padding: '5mm', borderRadius: '5mm', backgroundColor: '#fff' }}>
             <h2 style={{ fontSize: '16pt', fontWeight: 'bold', marginBottom: '4mm', color: '#4338ca', borderBottom: '1px solid #4338ca', paddingBottom: '2mm' }}>
               تخصص {spec.specName}
@@ -283,7 +258,7 @@ const CallCenterSchedule = () => {
               <thead>
                 <tr style={{ backgroundColor: '#f3f4f6' }}>
                   <th style={{ border: '1px solid #000', padding: '8px', width: '20%', fontWeight: 'bold' }}>اسم الطبيب</th>
-                  {DAYS.map(day => <th key={day} style={{ border: '1px solid #000', padding: '4px', fontSize: '8pt' }}>{day}</th>)}
+                  {DAYS.map((day) => <th key={day} style={{ border: '1px solid #000', padding: '4px', fontSize: '8pt' }}>{day}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -292,10 +267,10 @@ const CallCenterSchedule = () => {
                     <td colSpan={DAYS.length + 1} style={{ border: '1px solid #000', padding: '10px', color: '#9ca3af' }}>لا يوجد أطباء مسجلين لهذا التخصص</td>
                   </tr>
                 ) : (
-                  (doctorsBySpec[spec.id] || []).map(doctor => (
+                  (doctorsBySpec[spec.id] || []).map((doctor) => (
                     <tr key={doctor.id}>
                       <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold', textAlign: 'right' }}>{doctor.docName}</td>
-                      {DAYS.map(day => (
+                      {DAYS.map((day) => (
                         <td key={day} style={{ border: '1px solid #000', padding: '4px', fontSize: '7.5pt', whiteSpace: 'pre-line' }}>
                           {formatDayCell(doctor.workingSchedule?.[day])}
                         </td>
@@ -309,105 +284,141 @@ const CallCenterSchedule = () => {
         ))}
       </div>
 
-      <div ref={scheduleRef}>
+      {/* Visible Schedule */}
+      <Box ref={scheduleRef}>
         {specs.length === 0 ? (
-          <div className="text-center text-gray-400 py-32 bg-white rounded-3xl border border-gray-100 shadow-sm border-dashed">
-            <div className="text-6xl mb-4 opacity-20">⚕️</div>
-            <p className="font-bold text-lg">لا توجد تخصصات مسجلة للمركز</p>
-          </div>
+          <Card sx={{ textAlign: 'center', py: 12 }}>
+            <MedicalServicesIcon sx={{ fontSize: 60, color: 'grey.300', mb: 2 }} />
+            <Typography variant="h6" color="text.secondary">لا توجد تخصصات مسجلة للمركز</Typography>
+          </Card>
         ) : filteredSpecs.length === 0 ? (
-          <div className="text-center text-gray-400 py-32 bg-white rounded-3xl border border-gray-100 shadow-sm">
-            <div className="text-6xl mb-4 opacity-20">🔎</div>
-            <p className="font-bold text-lg">لا توجد نتائج تطابق بحثك عن "{searchTerm}"</p>
-            <button onClick={() => setSearchTerm('')} className="mt-4 text-purple-600 font-bold hover:underline">عرض الكل ←</button>
-          </div>
+          <Card sx={{ textAlign: 'center', py: 12 }}>
+            <Typography color="text.secondary">لا توجد نتائج تطابق بحثك عن "{searchTerm}"</Typography>
+            <Button onClick={() => setSearchTerm('')} size="small" sx={{ mt: 1 }}>عرض الكل</Button>
+          </Card>
         ) : (
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <Stack spacing={2}>
             {filteredSpecs.map((spec) => {
               const isOpen = expandedIds.has(spec.id)
               const doctors = doctorsBySpec[spec.id] || []
               const term = searchTerm.toLowerCase()
-
-              // Filter doctors in the list if search is active
-              const visibleDoctors = !searchTerm.trim() ? doctors : doctors.filter(d =>
-                d.docName.toLowerCase().includes(term) || (d.phoneNumber && d.phoneNumber.includes(term))
-              )
+              const visibleDoctors = !searchTerm.trim()
+                ? doctors
+                : doctors.filter((d) => d.docName.toLowerCase().includes(term) || (d.phoneNumber && d.phoneNumber.includes(term)))
 
               return (
-                <div key={spec.id} className={`bg-white rounded-3xl border transition-all duration-300 ${isOpen ? 'border-purple-200 shadow-lg' : 'border-gray-100 shadow-sm hover:border-purple-100'}`}>
-                  <button
+                <Card
+                  key={spec.id}
+                  variant="outlined"
+                  sx={{
+                    borderColor: isOpen ? 'primary.200' : 'divider',
+                    boxShadow: isOpen ? 3 : 0,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {/* Spec Header Row */}
+                  <Box
                     onClick={() => toggleExpand(spec.id)}
-                    className="w-full flex items-center justify-between px-6 py-5"
+                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2.5, cursor: 'pointer', '&:hover': { bgcolor: 'grey.50' } }}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl transition-colors ${isOpen ? 'bg-purple-600 text-white shadow-lg' : 'bg-purple-50 text-purple-500'}`}>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Avatar
+                        sx={{
+                          width: 44, height: 44, fontWeight: 700, fontSize: '1.1rem',
+                          bgcolor: isOpen ? 'primary.main' : 'primary.50',
+                          color: isOpen ? 'white' : 'primary.main',
+                        }}
+                      >
                         {spec.specName.charAt(0)}
-                      </div>
-                      <div className="text-right">
-                        <p className={`font-black tracking-tight ${isOpen ? 'text-purple-600' : 'text-gray-800'}`}>{spec.specName}</p>
-                        <p className="text-xs text-gray-400 font-medium">{spec.description || 'جدول الأطباء المتوفرين'}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`text-[10px] font-black px-3 py-1 rounded-full transition-colors ${isOpen ? 'bg-purple-50 text-purple-600' : 'bg-gray-50 text-gray-400'}`}>
-                        {doctors.length} أطباء
-                      </span>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center border border-gray-100 transition-all ${isOpen ? 'rotate-180 bg-purple-50 border-purple-100 text-purple-600' : 'text-gray-300'}`}>
-                        ▼
-                      </div>
-                    </div>
-                  </button>
+                      </Avatar>
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography fontWeight={700} color={isOpen ? 'primary.main' : 'text.primary'}>{spec.specName}</Typography>
+                        <Typography variant="caption" color="text.secondary">{spec.description || 'جدول الأطباء المتوفرين'}</Typography>
+                      </Box>
+                    </Stack>
+                    <Stack direction="row" alignItems="center" spacing={1.5}>
+                      <Chip
+                        size="small"
+                        icon={<PeopleIcon />}
+                        label={`${doctors.length} أطباء`}
+                        color={isOpen ? 'primary' : 'default'}
+                        variant="outlined"
+                      />
+                      <ExpandMoreIcon
+                        sx={{
+                          color: isOpen ? 'primary.main' : 'text.disabled',
+                          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s',
+                        }}
+                      />
+                    </Stack>
+                  </Box>
 
-                  {isOpen && (
-                    <div className="px-6 py-6 border-t border-gray-50 bg-gray-50/30">
+                  {/* Doctors Collapse */}
+                  <Collapse in={isOpen}>
+                    <Divider />
+                    <Box sx={{ p: 3, bgcolor: 'grey.50' }}>
                       {visibleDoctors.length === 0 ? (
-                        <p className="text-sm text-gray-400 text-center py-6 font-medium">لا يوجد أطباء مطابقين في هذا التخصص</p>
+                        <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 3 }}>
+                          لا يوجد أطباء مطابقين في هذا التخصص
+                        </Typography>
                       ) : (
-                        <div className="grid grid-cols-1 gap-6">
+                        <Stack spacing={2}>
                           {visibleDoctors.map((doctor) => (
-                            <div key={doctor.id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100/80 hover:shadow-md transition-shadow animate-in zoom-in-95 duration-300">
-                              <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 mb-5 border-b border-gray-50 pb-5">
-                                <div className="flex items-center gap-4 text-right">
-                                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
-                                    {doctor.photoUrl ? <img src={doctor.photoUrl} className="w-full h-full rounded-2xl object-cover" /> : '👨‍⚕️'}
-                                  </div>
-                                  <div>
-                                    <p className="font-black text-gray-800 text-lg">{doctor.docName}</p>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                      <span className="text-xs text-blue-500 font-bold tracking-tight" dir="ltr">{doctor.phoneNumber || 'لا يوجد هاتف'}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  <span className={`text-[9px] px-3 py-1.5 rounded-full font-black uppercase tracking-wider ${doctor.isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                                    {doctor.isActive ? 'نشط الآن' : 'غير متوفر'}
-                                  </span>
-                                  <span className={`text-[9px] px-3 py-1.5 rounded-full font-black uppercase tracking-wider ${doctor.isBookingEnabled ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
-                                    {doctor.isBookingEnabled ? 'حجز متاح' : 'الحجز مقفل'}
-                                  </span>
-                                </div>
-                              </div>
+                            <Card key={doctor.id} sx={{ p: 3 }}>
+                              {/* Doctor header */}
+                              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 2.5, pb: 2.5, borderBottom: 1, borderColor: 'divider' }}>
+                                <Stack direction="row" spacing={2} alignItems="center">
+                                  <Avatar
+                                    src={doctor.photoUrl}
+                                    sx={{ width: 52, height: 52, bgcolor: 'primary.50' }}
+                                  >
+                                    <PersonIcon color="primary" />
+                                  </Avatar>
+                                  <Box>
+                                    <Typography variant="h6" fontWeight={700}>{doctor.docName}</Typography>
+                                    <Typography variant="caption" color="primary" dir="ltr">{doctor.phoneNumber || 'لا يوجد هاتف'}</Typography>
+                                  </Box>
+                                </Stack>
+                                <Stack direction="row" spacing={1} flexWrap="wrap">
+                                  <Chip
+                                    size="small"
+                                    label={doctor.isActive ? 'نشط الآن' : 'غير متوفر'}
+                                    color={doctor.isActive ? 'success' : 'error'}
+                                    variant="outlined"
+                                  />
+                                  <Chip
+                                    size="small"
+                                    label={doctor.isBookingEnabled ? 'حجز متاح' : 'الحجز مقفل'}
+                                    color={doctor.isBookingEnabled ? 'primary' : 'default'}
+                                    variant="outlined"
+                                  />
+                                </Stack>
+                              </Box>
 
-                              <div>
-                                <div className="flex items-center gap-2 mb-3">
-                                  <span className="w-1.5 h-3 bg-purple-500 rounded-full"></span>
-                                  <p className="text-[11px] font-black text-gray-800 uppercase tracking-widest">المواعيد الأسبوعية</p>
-                                </div>
+                              {/* Schedule */}
+                              <Box>
+                                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
+                                  <Box sx={{ width: 4, height: 16, bgcolor: 'secondary.main', borderRadius: 1 }} />
+                                  <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
+                                    المواعيد الأسبوعية
+                                  </Typography>
+                                </Stack>
                                 {renderScheduleDetail(doctor.workingSchedule)}
-                              </div>
-                            </div>
+                              </Box>
+                            </Card>
                           ))}
-                        </div>
+                        </Stack>
                       )}
-                    </div>
-                  )}
-                </div>
+                    </Box>
+                  </Collapse>
+                </Card>
               )
             })}
-          </div>
+          </Stack>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }
 

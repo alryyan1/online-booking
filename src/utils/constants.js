@@ -5,6 +5,22 @@ export const ROLES = {
   CALL_CENTER: 'callcenter',
 }
 
+// All non-superadmin roles that belong to a facility
+export const FACILITY_ROLES = ['admin', 'callcenter', 'reception', 'doctor', 'facilityadmin']
+
+/**
+ * Returns the post-login redirect path for a given role + facilityId.
+ * superadmin → superadmin dashboard
+ * any facility role with facilityId → their facility detail page
+ * any facility role without facilityId → superadmin dashboard (fallback)
+ */
+export const getRedirectPath = (role, facilityId) => {
+  if (role === ROLES.SUPER_ADMIN) return '/superadmin/dashboard'
+  if (facilityId) return `/admin/facilities/${facilityId}`
+  // Logged-in but no facility assigned — send to superadmin as safe fallback
+  return '/superadmin/dashboard'
+}
+
 export const SUPER_ADMIN_EMAILS = [
   import.meta.env.VITE_SUPER_ADMIN_EMAIL_1,
   import.meta.env.VITE_SUPER_ADMIN_EMAIL_2,
