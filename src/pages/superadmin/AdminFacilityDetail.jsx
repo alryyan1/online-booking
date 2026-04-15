@@ -67,7 +67,8 @@ import {
   deleteFacilityInsurance,
 } from '../../services/facilityService'
 import { getAppointments } from '../../services/appointmentService'
-import { getUsersByFacility, createFacilityUser, updateFacilityUser, deleteFacilityUser } from '../../services/userService'
+import { getUsersByFacility, createFacilityUser, updateFacilityUser, deleteFacilityUser, deleteAuthUser } from '../../services/userService'
+import { adminRegisterUser } from '../../services/authService'
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
 import { storage } from '../../services/firebase'
 import Modal from '../../components/common/Modal'
@@ -806,12 +807,12 @@ const InsuranceTab = ({ facilityId }) => {
 
 // ─── Users Tab ─────────────────────────────────────────────────────────────────
 
-const USER_EMPTY = { userName: '', userPhone: '', userPassword: '', userType: 'admin' }
+const USER_EMPTY = { userName: '', userEmail: '', userPhone: '', userPassword: '', userType: 'admin' }
 const USER_TYPES = [
   { value: 'all', label: 'الكل' },
   { value: 'admin', label: 'Admin' },
   { value: 'doctor', label: 'Doctor' },
-  { value: 'callCenter', label: 'Call Center' },
+  { value: 'callcenter', label: 'Call Center' },
   { value: 'reception', label: 'Reception' },
 ]
 
@@ -837,12 +838,15 @@ const UsersTab = ({ facilityId, facilityName }) => {
   const handleField = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
 
   const openAdd = () => { setForm(USER_EMPTY); setEditTarget(null); setModal(true) }
-  const openEdit = (u) => { setForm({ userName: u.userName || '', userPhone: u.userPhone || '', userPassword: '', userType: u.userType || 'admin' }); setEditTarget(u); setModal(true) }
+  const openEdit = (u) => { setForm({ userName: u.userName || '', userEmail: u.email || '', userPhone: u.userPhone || '', userPassword: '', userType: u.userType || 'admin' }); setEditTarget(u); setModal(true) }
   const closeModal = () => { setModal(false); setEditTarget(null) }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.userName.trim()) { toast.error('اسم المستخدم مطلوب'); return }
+    if (!editTarget && !form.userEmail.trim()) { toast.error('البريد الإلكتروني مطلوب'); return }
+    if (!editTarget && form.userPassword.length < 6) { toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل'); return }
+
     setSaving(true)
     try {
       if (editTarget) {
@@ -850,27 +854,49 @@ const UsersTab = ({ facilityId, facilityName }) => {
         if (form.userPassword.trim()) payload.userPassword = form.userPassword
         await updateFacilityUser(editTarget.id, payload); toast.success('تم تحديث المستخدم')
       } else {
-        await createFacilityUser({ userName: form.userName, userPhone: form.userPhone, userPassword: form.userPassword, userType: form.userType, centerId: facilityId, centerName: facilityName || '' })
-        toast.success('تم إضافة المستخدم')
+        // Create Auth account and Firestore profile in one call (without logout)
+        await adminRegisterUser(
+          form.userEmail,
+          form.userPassword,
+          form.userName,
+          form.userType,
+          facilityId
+        )
+        toast.success('تم إضافة المستخدم وإنشاء الحساب')
       }
       closeModal(); load()
-    } catch { toast.error('حدث خطأ، يرجى المحاولة') }
-    finally { setSaving(false) }
+    } catch (err) {
+      toast.error(err.message || 'حدث خطأ، يرجى المحاولة')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleDelete = async (user) => {
-    if (!window.confirm(`هل أنت متأكد من حذف "${user.userName}"؟`)) return
-    try { await deleteFacilityUser(user.id); toast.success('تم حذف المستخدم'); load() }
-    catch { toast.error('حدث خطأ أثناء الحذف') }
+    if (!window.confirm(`هل أنت متأكد من حذف "${user.userName}"؟ سيتم إلغاء حساب الدخول نهائياً.`)) return
+    try {
+      // 1. Delete from Auth (via Local API) if UID is available
+      if (user.uid || user.id) {
+        try { await deleteAuthUser(user.uid || user.id) }
+        catch (e) { console.warn('Auth deletion failed/skipped:', e) }
+      }
+      // 2. Delete from Firestore
+      await deleteFacilityUser(user.id);
+      toast.success('تم حذف المستخدم وإلغاء الحساب')
+      load()
+    } catch { toast.error('حدث خطأ أثناء الحذف') }
   }
 
   const filteredUsers = users.filter((u) => {
-    const matchesSearch = u.userName?.toLowerCase().includes(searchTerm.toLowerCase()) || u.userPhone?.includes(searchTerm)
+    const matchesSearch =
+      u.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.userPhone?.includes(searchTerm)
     const matchesType = typeFilter === 'all' || u.userType === typeFilter
     return matchesSearch && matchesType
   })
 
-  const userTypeColor = (type) => ({ admin: 'error', doctor: 'primary', callCenter: 'secondary', reception: 'warning' }[type] || 'default')
+  const userTypeColor = (type) => ({ admin: 'error', doctor: 'primary', callcenter: 'secondary', reception: 'warning' }[type] || 'default')
 
   if (loading) return <Spinner size="lg" />
 
@@ -885,7 +911,7 @@ const UsersTab = ({ facilityId, facilityName }) => {
       </Box>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
-        <TextField size="small" placeholder="ابحث بالاسم أو رقم الهاتف..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+        <TextField size="small" placeholder="ابحث بالاسم، الإيميل أو الهاتف..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
           InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }} sx={{ flex: 1 }} />
         <TextField select size="small" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} sx={{ minWidth: 140 }} label="نوع المستخدم">
           {USER_TYPES.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
@@ -905,7 +931,7 @@ const UsersTab = ({ facilityId, facilityName }) => {
               <TableHead>
                 <TableRow>
                   <TableCell>المستخدم</TableCell>
-                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>الهاتف</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>الاتصال</TableCell>
                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>النوع</TableCell>
                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>آخر ظهور</TableCell>
                   <TableCell>إجراءات</TableCell>
@@ -924,7 +950,7 @@ const UsersTab = ({ facilityId, facilityName }) => {
                         </Box>
                         <Box>
                           <Typography fontWeight={600}>{u.userName}</Typography>
-                          <Typography variant="caption" color={u.isOnline ? 'success.main' : 'text.secondary'}>{u.isOnline ? 'متصل الآن' : 'غير متصل'}</Typography>
+                          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', maxWidth: 150 }}>{u.email || u.userEmail}</Typography>
                         </Box>
                       </Box>
                     </TableCell>
@@ -955,15 +981,16 @@ const UsersTab = ({ facilityId, facilityName }) => {
 
       <Modal isOpen={modal} onClose={closeModal} title={editTarget ? 'تعديل المستخدم' : 'إضافة مستخدم جديد'} size="md">
         <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          <TextField label="اسم المستخدم *" name="userName" value={form.userName} onChange={handleField} required fullWidth />
+          <TextField label="الاسم الكامل *" name="userName" value={form.userName} onChange={handleField} required fullWidth />
+          <TextField label="البريد الإلكتروني *" name="userEmail" type="email" value={form.userEmail} onChange={handleField} required={!editTarget} disabled={!!editTarget} fullWidth inputProps={{ dir: 'ltr' }} />
           <TextField label="رقم الهاتف" name="userPhone" value={form.userPhone} onChange={handleField} fullWidth inputProps={{ dir: 'ltr' }} />
           <TextField select label="نوع المستخدم" name="userType" value={form.userType} onChange={handleField} fullWidth>
             <MenuItem value="admin">Admin</MenuItem>
             <MenuItem value="doctor">Doctor</MenuItem>
-            <MenuItem value="callCenter">Call Center</MenuItem>
+            <MenuItem value="callcenter">Call Center</MenuItem>
             <MenuItem value="reception">Reception</MenuItem>
           </TextField>
-          <TextField type="password" label={editTarget ? 'كلمة المرور (اتركها فارغة للإبقاء على الحالية)' : 'كلمة المرور *'} name="userPassword" value={form.userPassword} onChange={handleField} required={!editTarget} fullWidth />
+          <TextField type="password" label={editTarget ? 'كلمة المرور (اتركها فارغة للإبقاء على الحالية)' : 'كلمة المرور *'} name="userPassword" value={form.userPassword} onChange={handleField} required={!editTarget} fullWidth inputProps={{ dir: 'ltr' }} />
           <DialogActions sx={{ px: 0, pb: 0 }}>
             <Button onClick={closeModal} variant="outlined" color="inherit">إلغاء</Button>
             <Button type="submit" variant="contained" disabled={saving}>{saving ? 'جاري الحفظ...' : editTarget ? 'حفظ التعديلات' : 'إضافة المستخدم'}</Button>

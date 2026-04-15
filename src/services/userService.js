@@ -44,3 +44,17 @@ export const updateFacilityUser = (userId, data) =>
 
 export const deleteFacilityUser = (userId) =>
   deleteDoc(doc(db, COLLECTIONS.USERS, userId))
+
+// Local Admin API helpers (requires npm run admin-api)
+const ADMIN_API = 'http://localhost:3001'
+
+export const deleteAuthUser = async (uid) => {
+  const res = await fetch(`${ADMIN_API}/auth-users/${uid}`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.error || 'Failed to delete auth user')
+  }
+  return res.json()
+}

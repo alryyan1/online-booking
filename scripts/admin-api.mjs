@@ -89,6 +89,37 @@ app.patch('/auth-users/:uid', async (req, res) => {
   }
 })
 
+// POST /auth-users — create a new user with role
+app.post('/auth-users', async (req, res) => {
+  const { email, password, displayName, role } = req.body
+  try {
+    const user = await admin.auth().createUser({
+      email,
+      password,
+      displayName,
+    })
+    if (role) {
+      await admin.auth().setCustomUserClaims(user.uid, { role })
+    }
+    res.status(201).json({ uid: user.uid, email: user.email, displayName: user.displayName })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// DELETE /auth-users/:uid — permanent account cancellation
+app.delete('/auth-users/:uid', async (req, res) => {
+  const { uid } = req.params
+  try {
+    await admin.auth().deleteUser(uid)
+    res.json({ success: true, message: `User ${uid} deleted` })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
 process.on('uncaughtException', (err) => console.error('❌ Uncaught:', err))
 process.on('unhandledRejection', (err) => console.error('❌ Unhandled rejection:', err))
 

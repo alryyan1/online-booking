@@ -2,6 +2,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
+  getAuth,
 } from 'firebase/auth'
 import {
   doc,
@@ -13,7 +14,8 @@ import {
   where,
   serverTimestamp,
 } from 'firebase/firestore'
-import { auth, db } from './firebase'
+import { initializeApp, deleteApp } from 'firebase/app'
+import { auth, db, firebaseConfig } from './firebase'
 import { COLLECTIONS, ROLES } from '../utils/constants'
 
 export const loginWithEmail = async (email, password) => {
@@ -32,6 +34,41 @@ export const registerUser = async (email, password, displayName, role = ROLES.PA
   if (facilityId) data.facilityId = facilityId
   await setDoc(doc(db, COLLECTIONS.USERS, credential.user.uid), data)
   return credential
+}
+
+/**
+ * Creates a new Auth user without signing out the currently logged-in admin.
+ * Uses a temporary secondary Firebase app instance.
+ */
+export const adminRegisterUser = async (email, password, displayName, role, facilityId = null) => {
+  const secondaryApp = initializeApp(firebaseConfig, 'Secondary')
+  const secondaryAuth = getAuth(secondaryApp)
+
+  try {
+    const credential = await createUserWithEmailAndPassword(secondaryAuth, email, password)
+    const data = {
+      uid: credential.user.uid,
+      email,
+      displayName,
+      userType: role, // Mapping for consistency
+      role,
+      createdAt: serverTimestamp(),
+    }
+    if (facilityId) {
+      data.facilityId = facilityId
+      data.centerId = facilityId
+    }
+
+    // Save profile to main Firestore
+    await setDoc(doc(db, COLLECTIONS.USERS, credential.user.uid), data)
+
+    // Sign out from secondary app to clean up session
+    await signOut(secondaryAuth)
+    return credential.user
+  } finally {
+    // Clean up secondary app
+    await deleteApp(secondaryApp)
+  }
 }
 
 export const logout = () => signOut(auth)
