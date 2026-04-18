@@ -20,7 +20,16 @@ const centralRef = () => collection(db, 'allDoctors')
 
 export const getCentralDoctors = async () => {
   const snap = await getDocs(centralRef())
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+  const docs = snap.docs.map((d) => {
+    const data = d.data()
+    return {
+      ...data,
+      id: data.id !== undefined ? data.id : d.id,
+      docId: d.id
+    }
+  })
+  console.log('Fetched central doctors:', docs.length, docs.slice(0, 2))
+  return docs
 }
 
 export const getCentralDoctorById = async (doctorId) => {

@@ -17,7 +17,16 @@ export const FACILITY_ROLES = ['admin', 'callcenter', 'reception', 'doctor', 'fa
 export const getRedirectPath = (role, facilityId) => {
   if (role === ROLES.SUPER_ADMIN) return '/superadmin/dashboard'
   if (facilityId) return `/admin/facilities/${facilityId}`
-  // Logged-in but no facility assigned — send to superadmin as safe fallback
+  return '/superadmin/dashboard'
+}
+
+/**
+ * Returns the initial landing page after login.
+ * Facility users start at 'Book Today'.
+ */
+export const getLandingPath = (role, facilityId) => {
+  if (role === ROLES.SUPER_ADMIN) return '/superadmin/dashboard'
+  if (facilityId) return '/callcenter/book-today'
   return '/superadmin/dashboard'
 }
 

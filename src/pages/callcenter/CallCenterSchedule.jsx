@@ -46,7 +46,8 @@ const CallCenterSchedule = () => {
     setLoading(true)
     try {
       const specData = await getSpecializations(facilityId)
-      const sortedSpecs = [...specData].sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+      const activeSpecs = specData.filter((s) => s.isActive !== false)
+      const sortedSpecs = [...activeSpecs].sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
       setSpecs(sortedSpecs)
 
       const doctorPromises = sortedSpecs.map(async (spec) => {

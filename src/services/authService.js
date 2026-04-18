@@ -28,10 +28,14 @@ export const registerUser = async (email, password, displayName, role = ROLES.PA
     uid: credential.user.uid,
     email,
     displayName,
+    userName: displayName, // Backward compatibility
     role,
     createdAt: serverTimestamp(),
   }
-  if (facilityId) data.facilityId = facilityId
+  if (facilityId) {
+    data.facilityId = facilityId
+    data.centerId = facilityId
+  }
   await setDoc(doc(db, COLLECTIONS.USERS, credential.user.uid), data)
   return credential
 }
@@ -40,7 +44,7 @@ export const registerUser = async (email, password, displayName, role = ROLES.PA
  * Creates a new Auth user without signing out the currently logged-in admin.
  * Uses a temporary secondary Firebase app instance.
  */
-export const adminRegisterUser = async (email, password, displayName, role, facilityId = null) => {
+export const adminRegisterUser = async (email, password, displayName, role, facilityId = null, userPhone = '') => {
   const secondaryApp = initializeApp(firebaseConfig, 'Secondary')
   const secondaryAuth = getAuth(secondaryApp)
 
@@ -50,13 +54,13 @@ export const adminRegisterUser = async (email, password, displayName, role, faci
       uid: credential.user.uid,
       email,
       displayName,
+      userName: displayName, // Backward compatibility
       userType: role, // Mapping for consistency
       role,
+      userPhone,
       createdAt: serverTimestamp(),
-    }
-    if (facilityId) {
-      data.facilityId = facilityId
-      data.centerId = facilityId
+      facilityId: facilityId,
+      centerId: facilityId,
     }
 
     // Save profile to main Firestore

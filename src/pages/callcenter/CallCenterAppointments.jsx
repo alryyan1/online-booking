@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { getAppointments } from '../../services/appointmentService'
+import { getAppointments, updateAppointmentStatus, sendCancelWhatsApp } from '../../services/appointmentService'
 import { formatDate } from '../../utils/bookingUtils'
+import { APPOINTMENT_STATUS, APPOINTMENT_STATUS_LABELS } from '../../utils/constants'
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -26,6 +27,7 @@ import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
 import EventIcon from '@mui/icons-material/Event'
 import WbSunnyIcon from '@mui/icons-material/WbSunny'
 import NightsStayIcon from '@mui/icons-material/NightsStay'
+import CancelIcon from '@mui/icons-material/Cancel'
 import Spinner from '../../components/common/Spinner'
 import toast from 'react-hot-toast'
 
@@ -48,6 +50,30 @@ const CallCenterAppointments = () => {
       .catch((err) => { console.error(err); toast.error('حدث خطأ أثناء تحميل المواعيد') })
       .finally(() => setLoading(false))
   }, [facilityId])
+
+  const handleCancel = async (id) => {
+    if (!window.confirm('هل أنت متأكد من إلغاء هذا الحجز؟')) return
+    const aptData = appointments.find(a => a.id === id)
+    setLoading(true)
+    try {
+      await updateAppointmentStatus(facilityId, id, APPOINTMENT_STATUS.CANCELED)
+      toast.success('تم إلغاء الحجز بنجاح')
+      
+      // WhatsApp notification
+      if (aptData) {
+        sendCancelWhatsApp(aptData)
+      }
+
+      // Re-fetch appointments from server to ensure UI is in sync
+      const updated = await getAppointments(facilityId)
+      setAppointments(updated)
+    } catch (err) {
+      console.error(err)
+      toast.error('حدث خطأ أثناء إلغاء الحجز')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const filteredAppointments = appointments.filter((apt) => {
     if (activeTab === 'today' && apt.date !== todayStr) return false
@@ -144,6 +170,7 @@ const CallCenterAppointments = () => {
                   <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>الطبيب / التخصص</TableCell>
                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>التاريخ</TableCell>
                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>الوقت</TableCell>
+                  <TableCell align="center">إجراءات</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -165,6 +192,23 @@ const CallCenterAppointments = () => {
                         label={apt.period === 'morning' ? 'صباحاً' : apt.period === 'evening' ? 'مساءً' : '—'}
                         color={apt.period === 'morning' ? 'warning' : 'secondary'} variant="outlined" />
                       <Typography variant="caption" display="block" dir="ltr">{apt.time || apt.timeSlot || ''}</Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      {apt.status === APPOINTMENT_STATUS.CANCELED ? (
+                        <Typography variant="body2" color="error" fontWeight={800}>
+                          تم الغاء الحجز
+                        </Typography>
+                      ) : (
+                        <Button 
+                          size="small" 
+                          color="error" 
+                          variant="outlined"
+                          onClick={() => handleCancel(apt.id)}
+                          sx={{ borderRadius: 2, fontSize: '0.75rem', fontWeight: 700 }}
+                        >
+                          إلغاء الحجز
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

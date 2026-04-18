@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { getSpecializations, getDoctorsBySpec } from '../../services/facilityService'
 import { getBookedSlots, createCallCenterAppointment } from '../../services/appointmentService'
 import { getAvailableBookingDays, categorizeSlotsByShift } from '../../utils/bookingUtils'
+import { APPOINTMENT_STATUS } from '../../utils/constants'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
@@ -16,6 +17,8 @@ import TableRow from '@mui/material/TableRow'
 import Avatar from '@mui/material/Avatar'
 import Chip from '@mui/material/Chip'
 import Stack from '@mui/material/Stack'
+import Tabs from '@mui/material/Tabs'
+import Tab from '@mui/material/Tab'
 import Card from '@mui/material/Card'
 import InputAdornment from '@mui/material/InputAdornment'
 import DialogActions from '@mui/material/DialogActions'
@@ -25,8 +28,11 @@ import ClearIcon from '@mui/icons-material/Clear'
 import EventIcon from '@mui/icons-material/Event'
 import PersonIcon from '@mui/icons-material/Person'
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
+import WbSunnyIcon from '@mui/icons-material/WbSunny'
+import NightsStayIcon from '@mui/icons-material/NightsStay'
 import Spinner from '../../components/common/Spinner'
 import Modal from '../../components/common/Modal'
+import CircularProgress from '@mui/material/CircularProgress'
 import toast from 'react-hot-toast'
 
 const CallCenterBookNow = () => {
@@ -50,14 +56,22 @@ const CallCenterBookNow = () => {
   const [bookedCounts, setBookedCounts] = useState({})
   const [loadingCounts, setLoadingCounts] = useState(false)
 
+  const [showPatientList, setShowPatientList] = useState(false)
+  const [listDoctor, setListDoctor] = useState(null)
+  const [listDate, setListDate] = useState('')
+  const [listAppointments, setListAppointments] = useState([])
+  const [loadingList, setLoadingList] = useState(false)
+  const [listTab, setListTab] = useState(0)
+
   const loadData = async () => {
     if (!facilityId) return
     setLoading(true)
     try {
-      const specs = await getSpecializations(facilityId)
+      const allSpecs = await getSpecializations(facilityId)
+      const activeSpecs = allSpecs.filter((s) => s.isActive !== false)
       const initialDateMap = {}
       const specData = await Promise.all(
-        specs.map(async (spec) => {
+        activeSpecs.map(async (spec) => {
           const doctors = await getDoctorsBySpec(facilityId, spec.id)
           const availableDocs = doctors
             .filter((d) => d.isActive !== false && d.isBookingEnabled !== false)
@@ -96,6 +110,34 @@ const CallCenterBookNow = () => {
       setBookedCounts((prev) => ({ ...prev, [key]: counts }))
     } catch (err) { console.error(err) }
     setLoadingCounts(false)
+  }
+
+  const handleOpenPatientList = async (doctor) => {
+    const activeDay = docSelectedDates[doctor.id]
+    if (!activeDay) { toast.error('يرجى اختيار تاريخ أولاً'); return }
+    
+    setListDoctor(doctor)
+    setListDate(activeDay.date)
+    setListAppointments([])
+    setListTab(0)
+    setShowPatientList(true)
+    setLoadingList(true)
+    try {
+      const slots = await getBookedSlots(facilityId, doctor.id, activeDay.date)
+      // Exclude canceled appointments
+      const activeSlots = slots.filter(s => s.status !== APPOINTMENT_STATUS.CANCELED)
+      // Sort: Latest first (descending by createdAt)
+      const sorted = activeSlots.sort((a, b) => {
+        const timeA = a.createdAt?.seconds || 0
+        const timeB = b.createdAt?.seconds || 0
+        return timeB - timeA
+      })
+      setListAppointments(sorted)
+    } catch (err) {
+      console.error(err)
+      toast.error('حدث خطأ أثناء تحميل كشف الحجز')
+    }
+    setLoadingList(false)
   }
 
   const handleDaySelect = (doctor, day) => {
@@ -224,7 +266,13 @@ const CallCenterBookNow = () => {
                         return (
                           <TableRow key={doc.id} hover>
                             <TableCell>
-                              <Stack direction="row" spacing={1.5} alignItems="center">
+                              <Stack 
+                                direction="row" 
+                                spacing={1.5} 
+                                alignItems="center"
+                                onClick={() => handleOpenPatientList(doc)}
+                                sx={{ cursor: 'pointer', '&:hover': { opacity: 0.7 } }}
+                              >
                                 <Avatar src={doc.photoUrl} sx={{ width: 40, height: 40, bgcolor: 'primary.100' }}>
                                   <PersonIcon fontSize="small" color="primary" />
                                 </Avatar>
@@ -296,6 +344,76 @@ const CallCenterBookNow = () => {
             )
           })}
         </Grid>
+      </Modal>
+
+      {/* Patient List Modal */}
+      <Modal 
+        isOpen={showPatientList} 
+        onClose={() => setShowPatientList(false)} 
+        title={`كشف حجوزات د. ${listDoctor?.docName} - ${listDate}`} 
+        size="md"
+      >
+        {loadingList ? (
+          <Box sx={{ py: 5, textAlign: 'center' }}><CircularProgress size={30} /></Box>
+        ) : (
+          <Box sx={{ mt: 1 }}>
+            <Tabs 
+              value={listTab} 
+              onChange={(e, v) => setListTab(v)} 
+              variant="fullWidth" 
+              sx={{ 
+                borderBottom: 1, 
+                borderColor: 'divider', 
+                mb: 2,
+                minHeight: 38,
+                '& .MuiTabs-indicator': { height: 2 }
+              }}
+            >
+              <Tab 
+                icon={<WbSunnyIcon sx={{ fontSize: '0.9rem' }} />} 
+                iconPosition="start" 
+                label="صباحاً" 
+                sx={{ minHeight: 38, py: 0, fontSize: '0.85rem', fontWeight: 600 }}
+              />
+              <Tab 
+                icon={<NightsStayIcon sx={{ fontSize: '0.9rem' }} />} 
+                iconPosition="start" 
+                label="مساءً" 
+                sx={{ minHeight: 38, py: 0, fontSize: '0.85rem', fontWeight: 600 }}
+              />
+            </Tabs>
+
+            {(() => {
+              const currentType = listTab === 0 ? 'morning' : 'evening'
+              const sectionAppts = listAppointments.filter(a => a.period === currentType)
+              
+              if (sectionAppts.length === 0) {
+                return (
+                  <Box sx={{ py: 6, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.disabled">لا يوجد حجوزات لهذه الفترة</Typography>
+                  </Box>
+                )
+              }
+
+              return (
+                <Stack spacing={1.5}>
+                  {sectionAppts.map((appt, idx) => (
+                    <Box key={appt.id} sx={{ p: 1.5, border: 1, borderColor: 'divider', borderRadius: 2, bgcolor: 'background.paper', display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar sx={{ width: 28, height: 28, bgcolor: 'grey.100', color: 'text.secondary', fontSize: '0.85rem', fontWeight: 700 }}>
+                        {idx + 1}
+                      </Avatar>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" fontWeight={700}>{appt.patientName}</Typography>
+                        <Typography variant="caption" color="text.secondary" dir="ltr">{appt.patientPhone}</Typography>
+                      </Box>
+                      <Chip label={appt.time || appt.timeSlot} size="small" color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
+                    </Box>
+                  ))}
+                </Stack>
+              )
+            })()}
+          </Box>
+        )}
       </Modal>
     </Box>
   )

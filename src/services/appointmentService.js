@@ -22,7 +22,7 @@ const PHONE_NUMBER_ID = '1151556284697196'
 
 // --- إعدادات SMS (Airtel Sudan REST API) ---
 const SMS_USERNAME = 'jawda'
-const SMS_PASSWORD = 'Alryyan1#'
+const SMS_PASSWORD = ''
 const SMS_SENDER = 'Jawda'
 const SMS_REST_URL = 'https://www.airtel.sd/api/rest_send_sms/'
 
@@ -104,10 +104,13 @@ export const updateAppointmentStatus = async (facilityId, appointmentId, status)
   const apptSnap = await getDoc(apptRef)
   await updateDoc(apptRef, { status })
   if (apptSnap.exists()) {
-    const { doctorId, date, timeSlot } = apptSnap.data()
-    const slotId = `${doctorId}_${date}_${timeSlot.replace(':', '-')}`
-    const slotRef = doc(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.SLOTS, slotId)
-    try { await updateDoc(slotRef, { status }) } catch { }
+    const data = apptSnap.data()
+    const timeVal = data.timeSlot || data.time
+    if (data.doctorId && data.date && timeVal && typeof timeVal === 'string') {
+      const slotId = `${data.doctorId}_${data.date}_${timeVal.replace(':', '-')}`
+      const slotRef = doc(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.SLOTS, slotId)
+      try { await updateDoc(slotRef, { status }) } catch { }
+    }
   }
 }
 
@@ -207,4 +210,54 @@ export const createCallCenterAppointment = async (facilityId, data) => {
   }
 
   return docRef;
+}
+
+export const sendCancelWhatsApp = async (data) => {
+  // 1. معالجة رقم الهاتف ليكون بصيغة 249...
+  let phone = data.patientPhone?.trim() || '';
+  if (phone.startsWith('0')) {
+    phone = '249' + phone.substring(1);
+  } else if (phone && !phone.startsWith('249')) {
+    phone = '249' + phone;
+  }
+
+  const shiftLabel = data.period === 'morning' ? 'الفترة الصباحية' : 'الفترة المسائية';
+
+  // --- [إرسال WhatsApp] ---
+  try {
+    const whatsappPayload = {
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "template",
+      template: {
+        name: "cancel_appointment",
+        language: { code: "ar" },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              { type: "text", text: data.patientName },      // {{1}}
+              { type: "text", text: data.doctorName },       // {{2}}
+              { type: "text", text: data.date },             // {{3}}
+              { type: "text", text: `(${shiftLabel})` }      // {{4}}
+            ]
+          }
+        ]
+      }
+    };
+
+    await axios.post(
+      `https://graph.facebook.com/v25.0/${PHONE_NUMBER_ID}/messages`,
+      whatsappPayload,
+      {
+        headers: {
+          Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    console.log("WhatsApp Cancellation sent successfully");
+  } catch (error) {
+    console.error("WhatsApp Cancellation API Error:", error.response?.data || error.message);
+  }
 }

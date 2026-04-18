@@ -86,13 +86,7 @@ const Navbar = () => {
             </ListItemButton>
           </ListItem>
         ))}
-        {!currentUser && (
-          <ListItem disablePadding>
-            <ListItemButton component={Link} to="/register">
-              <ListItemText primary="إنشاء حساب" primaryTypographyProps={{ color: 'primary', fontWeight: 600 }} />
-            </ListItemButton>
-          </ListItem>
-        )}
+
         {currentUser && (
           <ListItem disablePadding>
             <ListItemButton onClick={handleLogout}>
@@ -109,7 +103,7 @@ const Navbar = () => {
       <AppBar position="sticky" color="inherit" elevation={1} sx={{ bgcolor: 'white', zIndex: 1200 }}>
         <Toolbar sx={{ justifyContent: 'space-between' }}>
           {/* Logo */}
-          <Button component={Link} to="/" sx={{ p: 0.5, minWidth: 0 }}>
+          <Button component={Link} to={currentUser ? getDashboardLink() : '/'} sx={{ p: 0.5, minWidth: 0 }}>
             <Box component="img" src="/logo.png" alt="logo" sx={{ height: 40, objectFit: 'contain' }} />
           </Button>
 
@@ -120,14 +114,10 @@ const Navbar = () => {
                 {link.label}
               </Button>
             ))}
-            {!currentUser && (
-              <Button component={Link} to="/register" variant="contained" size="small" sx={{ mr: 1 }}>
-                إنشاء حساب
-              </Button>
-            )}
+
             {currentUser && (
               <Stack direction="row" alignItems="center" spacing={1.5}>
-                <Stack alignItems="flex-end">
+                <Stack sx={{ alignItems: 'flex-end' }}>
                   <Typography variant="caption" fontWeight={600} noWrap sx={{ maxWidth: 180 }}>
                     {currentUser.displayName || currentUser.email || currentUser.userName || '—'}
                   </Typography>

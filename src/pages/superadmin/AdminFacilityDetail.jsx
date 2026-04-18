@@ -66,11 +66,15 @@ import {
   updateFacilityInsurance,
   deleteFacilityInsurance,
 } from '../../services/facilityService'
-import { getAppointments } from '../../services/appointmentService'
+import { getAppointments, updateAppointmentStatus, sendCancelWhatsApp } from '../../services/appointmentService'
 import { getUsersByFacility, createFacilityUser, updateFacilityUser, deleteFacilityUser, deleteAuthUser } from '../../services/userService'
 import { adminRegisterUser } from '../../services/authService'
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
 import { storage } from '../../services/firebase'
+import { getCentralDoctors } from '../../services/doctorService'
+import { getSpecialties as getCentralSpecialties } from '../../services/specialtyService'
+import { getInsuranceCompanies as getCentralInsurance } from '../../services/insuranceService'
+import { COLLECTIONS, APPOINTMENT_STATUS } from '../../utils/constants'
 import Modal from '../../components/common/Modal'
 import Spinner from '../../components/common/Spinner'
 
@@ -125,16 +129,30 @@ const SpecializationsTab = ({ facilityId }) => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
 
+  const [centralDoctors, setCentralDoctors] = useState([])
+  const [centralSpecialties, setCentralSpecialties] = useState([])
+
   const loadSpecs = async () => {
     setLoading(true)
     try {
-      const data = await getSpecializations(facilityId)
-      setSpecs([...data].sort((a, b) => (a.order ?? 999) - (b.order ?? 999)))
-    } catch {
-      toast.error('حدث خطأ أثناء تحميل التخصصات')
+      const [specData, cDocs, cSpecs] = await Promise.all([
+        getSpecializations(facilityId),
+        getCentralDoctors(),
+        getCentralSpecialties()
+      ])
+      setSpecs([...specData].sort((a, b) => (a.order ?? 999) - (b.order ?? 999)))
+      setCentralDoctors(cDocs)
+      setCentralSpecialties(cSpecs)
+    } catch (err) {
+      console.error('Error loading central data:', err)
+      toast.error(`خطأ في تحميل البيانات: ${err.message || 'غير معروف'}`)
     }
     setLoading(false)
   }
+
+  useEffect(() => {
+    console.log('Central doctors state updated:', centralDoctors.length)
+  }, [centralDoctors])
 
   useEffect(() => { loadSpecs() }, [facilityId])
 
@@ -153,7 +171,12 @@ const SpecializationsTab = ({ facilityId }) => {
   const openDoctorsDialog = (spec) => { setDoctorsDialogSpec(spec); loadDoctors(spec.id) }
   const closeDoctorsDialog = () => setDoctorsDialogSpec(null)
 
-  const openAddSpec = () => { setSpecForm(SPEC_EMPTY); setEditSpec(null); setSpecModal(true) }
+  const openAddSpec = () => {
+    const nextOrder = specs.length > 0 ? Math.max(...specs.map((s) => s.order || 0), 0) + 1 : 1
+    setSpecForm({ ...SPEC_EMPTY, order: nextOrder })
+    setEditSpec(null)
+    setSpecModal(true)
+  }
   const openEditSpec = (s) => { setSpecForm({ ...SPEC_EMPTY, ...s }); setEditSpec(s); setSpecModal(true) }
   const closeSpecModal = () => { setSpecModal(false); setEditSpec(null) }
 
@@ -372,14 +395,45 @@ const SpecializationsTab = ({ facilityId }) => {
       {/* Specialization Modal */}
       <Modal isOpen={specModal} onClose={closeSpecModal} title={editSpec ? 'تعديل التخصص' : 'إضافة تخصص جديد'} size="md">
         <Box component="form" onSubmit={handleSpecSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          <TextField label="اسم التخصص *" name="specName" value={specForm.specName} onChange={handleSpecField} required fullWidth placeholder="طب عام..." />
-          <TextField label="الوصف" name="description" value={specForm.description} onChange={handleSpecField} fullWidth multiline rows={2} />
+          {!editSpec ? (
+            <Autocomplete
+              options={centralSpecialties}
+              getOptionLabel={(option) => option.name || ''}
+              noOptionsText={centralSpecialties.length === 0 ? "جاري تحميل التخصصات..." : "لا يوجد نتائج"}
+              value={centralSpecialties.find(s => String(s.id) === String(specForm.centralSpecialtyId)) || null}
+              onChange={(event, newValue) => {
+                if (newValue) {
+                  setSpecForm(f => ({
+                    ...f,
+                    specName: newValue.name || '',
+                    description: newValue.description || '',
+                    centralSpecialtyId: newValue.id || ''
+                  }))
+                } else {
+                  setSpecForm(f => ({ ...f, specName: '', description: '', centralSpecialtyId: '' }))
+                }
+              }}
+              renderInput={(params) => (
+                <TextField 
+                  {...params} 
+                  label="اختر التخصص من القائمة *" 
+                  required 
+                  fullWidth 
+                  helperText={centralSpecialties.length === 0 ? "تأكد من وجود بيانات في كولكشن medicalSpecialties" : ""}
+                />
+              )}
+            />
+          ) : (
+            <TextField label="اسم التخصص *" name="specName" value={specForm.specName} onChange={handleSpecField} required fullWidth disabled />
+          )}
+
+          <TextField label="الوصف" name="description" value={specForm.description} onChange={handleSpecField} fullWidth multiline rows={2} disabled={!!specForm.centralSpecialtyId && !editSpec} />
           <Grid container spacing={2}>
             <Grid item xs={6}>
               <TextField label="الترتيب" name="order" type="number" value={specForm.order} onChange={handleSpecField} fullWidth inputProps={{ min: 0 }} />
             </Grid>
             <Grid item xs={6}>
-              <TextField label="معرّف التخصص المركزي" name="centralSpecialtyId" value={specForm.centralSpecialtyId} onChange={handleSpecField} fullWidth inputProps={{ dir: 'ltr' }} />
+              <TextField label="معرّف التخصص المركزي" name="centralSpecialtyId" value={specForm.centralSpecialtyId} onChange={handleSpecField} fullWidth disabled inputProps={{ dir: 'ltr' }} />
             </Grid>
           </Grid>
           <FormControlLabel control={<Switch name="isActive" checked={specForm.isActive} onChange={handleSpecField} />} label="التخصص مفعل" />
@@ -408,14 +462,61 @@ const SpecializationsTab = ({ facilityId }) => {
           {/* Basic info panel */}
           {docTab === 'info' && (
             <Stack spacing={2}>
-              <TextField label="اسم الطبيب *" name="docName" value={docForm.docName} onChange={handleDocField} required fullWidth placeholder="د. محمد..." />
-              <TextField label="رقم الهاتف" name="phoneNumber" value={docForm.phoneNumber} onChange={handleDocField} fullWidth inputProps={{ dir: 'ltr' }} />
+              {!editDoc ? (
+                <Box>
+                  <Autocomplete
+                    options={centralDoctors}
+                    getOptionLabel={(option) => option.name || option.docName || ''}
+                    noOptionsText={centralDoctors.length === 0 ? "جاري تحميل الأطباء أو القائمة فارغة..." : "لا يوجد نتائج"}
+                    value={centralDoctors.find(d => String(d.id) === String(docForm.centralDoctorId)) || null}
+                    onChange={(event, newValue) => {
+                      if (newValue) {
+                        setDocForm(f => ({
+                          ...f,
+                          docName: newValue.name || newValue.docName || '',
+                          centralDoctorId: newValue.id || '',
+                          phoneNumber: newValue.phoneNumber || '',
+                          specialization: newValue.specialization || ''
+                        }))
+                      } else {
+                        setDocForm(f => ({ ...f, docName: '', centralDoctorId: '', phoneNumber: '', specialization: '' }))
+                      }
+                    }}
+                    renderInput={(params) => (
+                      <TextField 
+                        {...params} 
+                        label="اختر الطبيب من القائمة *" 
+                        required 
+                        fullWidth 
+                        helperText={centralDoctors.length === 0 ? "تأكد من وجود أطباء في كولكشن allDoctors" : ""}
+                      />
+                    )}
+                    sx={{ mb: 1 }}
+                  />
+                  {centralDoctors.length === 0 && (
+                    <Typography variant="caption" color="error" sx={{ mt: -0.5, display: 'block', mb: 1 }}>
+                      لم يتم العثور على أطباء في النظام المركزي
+                    </Typography>
+                  )}
+                </Box>
+              ) : (
+                <TextField label="اسم الطبيب *" name="docName" value={docForm.docName} onChange={handleDocField} required fullWidth disabled />
+              )}
+
+              <TextField 
+                label="رقم الهاتف" 
+                name="phoneNumber" 
+                value={docForm.phoneNumber} 
+                onChange={handleDocField} 
+                fullWidth 
+                inputProps={{ dir: 'ltr' }} 
+              />
               <Grid container spacing={2}>
                 <Grid item xs={6}>
-                  <TextField label="معرّف الطبيب المركزي" name="centralDoctorId" value={docForm.centralDoctorId} onChange={handleDocField} fullWidth inputProps={{ dir: 'ltr' }} />
+                  <TextField label="معرّف الطبيب المركزي" name="centralDoctorId" value={docForm.centralDoctorId} onChange={handleDocField} fullWidth disabled inputProps={{ dir: 'ltr' }} />
                 </Grid>
                 <Grid item xs={6}>
-                  <TextField label="معرّف التخصص" name="specialization" value={docForm.specialization} onChange={handleDocField} fullWidth inputProps={{ dir: 'ltr' }} />
+                  <TextField label="معرّف التخصص" name="specialization" value={docForm.specialization} onChange={handleDocField} fullWidth disabled inputProps={{ dir: 'ltr' }} />
                 </Grid>
                 <Grid item xs={6}>
                   <TextField label="حد المرضى الصباحي" name="morningPatientLimit" type="number" value={docForm.morningPatientLimit} onChange={handleDocField} fullWidth inputProps={{ min: 0 }} />
@@ -526,6 +627,30 @@ const AppointmentsTab = ({ facilityId }) => {
       .catch(() => toast.error('حدث خطأ أثناء تحميل المواعيد'))
       .finally(() => setLoading(false))
   }, [facilityId])
+
+  const handleCancel = async (id) => {
+    if (!window.confirm('هل أنت متأكد من إلغاء هذا الحجز؟')) return
+    const aptData = appointments.find(a => a.id === id)
+    setLoading(true)
+    try {
+      await updateAppointmentStatus(facilityId, id, APPOINTMENT_STATUS.CANCELED)
+      toast.success('تم إلغاء الحجز بنجاح')
+      
+      // WhatsApp notification
+      if (aptData) {
+        sendCancelWhatsApp(aptData)
+      }
+
+      // Re-fetch appointments from server to ensure UI is in sync
+      const updated = await getAppointments(facilityId)
+      setAppointments(updated)
+    } catch (err) {
+      console.error(err)
+      toast.error('حدث خطأ أثناء إلغاء الحجز')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const filteredAppointments = appointments.filter((apt) => {
     if (activeTab === 'today' && apt.date !== todayStr) return false
@@ -639,6 +764,7 @@ const AppointmentsTab = ({ facilityId }) => {
                   <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>الطبيب</TableCell>
                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>التاريخ</TableCell>
                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>الوقت</TableCell>
+                  <TableCell align="center">إجراءات</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -661,6 +787,23 @@ const AppointmentsTab = ({ facilityId }) => {
                         color={apt.period === 'morning' ? 'warning' : 'secondary'} variant="outlined" />
                       <Typography variant="caption" display="block" dir="ltr">{apt.time || apt.timeSlot || ''}</Typography>
                     </TableCell>
+                    <TableCell align="center">
+                      {apt.status === APPOINTMENT_STATUS.CANCELED ? (
+                        <Typography variant="body2" color="error" fontWeight={800}>
+                          تم الغاء الحجز
+                        </Typography>
+                      ) : (
+                        <Button 
+                          size="small" 
+                          color="error" 
+                          variant="outlined"
+                          onClick={() => handleCancel(apt.id)}
+                          sx={{ borderRadius: 2, fontSize: '0.75rem', fontWeight: 700 }}
+                        >
+                          إلغاء الحجز
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -678,6 +821,7 @@ const INS_EMPTY = { name: '', description: '', phone: '', enabled: true }
 
 const InsuranceTab = ({ facilityId }) => {
   const [companies, setCompanies] = useState([])
+  const [centralCompanies, setCentralCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
@@ -687,7 +831,14 @@ const InsuranceTab = ({ facilityId }) => {
 
   const load = async () => {
     setLoading(true)
-    try { setCompanies(await getInsuranceCompanies(facilityId)) }
+    try {
+      const [facilityIns, centralIns] = await Promise.all([
+        getInsuranceCompanies(facilityId),
+        getCentralInsurance()
+      ])
+      setCompanies(facilityIns)
+      setCentralCompanies(centralIns)
+    }
     catch { toast.error('حدث خطأ أثناء تحميل شركات التأمين') }
     setLoading(false)
   }
@@ -791,7 +942,39 @@ const InsuranceTab = ({ facilityId }) => {
 
       <Modal isOpen={modal} onClose={closeModal} title={editTarget ? 'تعديل شركة التأمين' : 'إضافة شركة تأمين'} size="md">
         <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
-          <TextField label="اسم الشركة *" name="name" value={form.name} onChange={handleField} required fullWidth />
+          {!editTarget ? (
+            <Autocomplete
+              options={centralCompanies}
+              getOptionLabel={(option) => option.name || ''}
+              noOptionsText={centralCompanies.length === 0 ? "جاري تحميل الشركات..." : "لا يوجد نتائج"}
+              value={centralCompanies.find(c => c.name === form.name) || null}
+              onChange={(event, newValue) => {
+                if (newValue) {
+                  setForm(f => ({
+                    ...f,
+                    name: newValue.name || '',
+                    phone: newValue.phone || newValue.phoneNumber || '',
+                    description: newValue.description || '',
+                    centralId: newValue.id || ''
+                  }))
+                } else {
+                  setForm(f => ({ ...f, name: '', phone: '', description: '', centralId: '' }))
+                }
+              }}
+              renderInput={(params) => (
+                <TextField 
+                  {...params} 
+                  label="اختر الشركة من القائمة *" 
+                  required 
+                  fullWidth 
+                  helperText={centralCompanies.length === 0 ? "تأكد من وجود بيانات في كولكشن insuranceCompanies" : ""}
+                />
+              )}
+            />
+          ) : (
+            <TextField label="اسم الشركة *" name="name" value={form.name} onChange={handleField} required fullWidth disabled />
+          )}
+
           <TextField label="رقم الهاتف" name="phone" value={form.phone} onChange={handleField} fullWidth inputProps={{ dir: 'ltr' }} />
           <TextField label="الوصف" name="description" value={form.description} onChange={handleField} fullWidth multiline rows={2} />
           <FormControlLabel control={<Switch name="enabled" checked={form.enabled} onChange={handleField} />} label="الشركة مفعلة" />
@@ -860,7 +1043,8 @@ const UsersTab = ({ facilityId, facilityName }) => {
           form.userPassword,
           form.userName,
           form.userType,
-          facilityId
+          facilityId,
+          form.userPhone
         )
         toast.success('تم إضافة المستخدم وإنشاء الحساب')
       }
@@ -890,6 +1074,7 @@ const UsersTab = ({ facilityId, facilityName }) => {
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
       u.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.userPhone?.includes(searchTerm)
     const matchesType = typeFilter === 'all' || u.userType === typeFilter
@@ -931,9 +1116,9 @@ const UsersTab = ({ facilityId, facilityName }) => {
               <TableHead>
                 <TableRow>
                   <TableCell>المستخدم</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>البريد الإلكتروني</TableCell>
                   <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>الاتصال</TableCell>
                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>النوع</TableCell>
-                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>آخر ظهور</TableCell>
                   <TableCell>إجراءات</TableCell>
                 </TableRow>
               </TableHead>
@@ -949,21 +1134,18 @@ const UsersTab = ({ facilityId, facilityName }) => {
                           <Box sx={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', bgcolor: u.isOnline ? 'success.main' : 'grey.400', border: '2px solid white' }} />
                         </Box>
                         <Box>
-                          <Typography fontWeight={600}>{u.userName}</Typography>
-                          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', maxWidth: 150 }}>{u.email || u.userEmail}</Typography>
+                          <Typography fontWeight={600}>{u.displayName || u.userName || '—'}</Typography>
                         </Box>
                       </Box>
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                      <Typography variant="body2">{u.email}</Typography>
                     </TableCell>
                     <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }} dir="ltr">
                       <Typography variant="body2">{u.userPhone || '—'}</Typography>
                     </TableCell>
                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                       <Chip label={u.userType || '—'} size="small" color={userTypeColor(u.userType)} variant="outlined" />
-                    </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {u.lastSeenAt?.toDate ? new Date(u.lastSeenAt.toDate()).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : 'غير متوفر'}
-                      </Typography>
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={0.5}>
@@ -1034,11 +1216,6 @@ const AdminFacilityDetail = () => {
 
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 2, md: 3 }, py: 4 }}>
-      {/* Back link */}
-      <Button component={Link} to="/superadmin" startIcon={<ArrowBackIcon />} color="inherit" size="small" sx={{ mb: 2, color: 'text.secondary' }}>
-        العودة إلى لوحة التحكم
-      </Button>
-
       {/* Facility header */}
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>

@@ -3,7 +3,6 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
 import { FacilityProvider } from './contexts/FacilityContext'
 import Navbar from './components/common/Navbar'
-import Footer from './components/common/Footer'
 import AppRouter from './router/AppRouter'
 
 const App = () => (
@@ -15,7 +14,6 @@ const App = () => (
           <main className="flex-1">
             <AppRouter />
           </main>
-          <Footer />
         </div>
         <Toaster
           position="top-center"

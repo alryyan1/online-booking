@@ -1,12 +1,12 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import ProtectedRoute from '../components/common/ProtectedRoute'
-import { ROLES, getRedirectPath } from '../utils/constants'
+import { ROLES, getRedirectPath, getLandingPath } from '../utils/constants'
 
 
 // Auth pages
 import Login from '../pages/auth/Login'
-import Register from '../pages/auth/Register'
+
 
 // Super Admin pages
 import SuperAdminDashboard from '../pages/superadmin/SuperAdminDashboard'
@@ -31,7 +31,7 @@ import NotFound from '../pages/NotFound'
 const GuestRoute = ({ children }) => {
   const { currentUser, userRole, facilityId, loading } = useAuth()
   if (loading) return null
-  if (currentUser) return <Navigate to={getRedirectPath(userRole, facilityId)} replace />
+  if (currentUser) return <Navigate to={getLandingPath(userRole, facilityId)} replace />
   return children
 }
 
@@ -42,7 +42,7 @@ const AppRouter = () => (
 
     {/* Auth */}
     <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
-    <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+
 
     {/* Super Admin */}
     <Route path="/superadmin" element={<Navigate to="/superadmin/dashboard" replace />} />
