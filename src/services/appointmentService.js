@@ -8,6 +8,8 @@ import {
   query,
   where,
   orderBy,
+  limit,
+  startAfter,
   runTransaction,
   serverTimestamp,
   getDoc,
@@ -33,6 +35,20 @@ export const getAppointments = async (facilityId) => {
   const q = query(appointmentsRef(facilityId), orderBy('createdAt', 'desc'))
   const snap = await getDocs(q)
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
+const PAGE_SIZE = 50
+
+export const getAppointmentsPaginated = async (facilityId, afterDoc = null) => {
+  const constraints = [orderBy('createdAt', 'desc'), limit(PAGE_SIZE)]
+  if (afterDoc) constraints.push(startAfter(afterDoc))
+  const q = query(appointmentsRef(facilityId), ...constraints)
+  const snap = await getDocs(q)
+  return {
+    appointments: snap.docs.map((d) => ({ id: d.id, ...d.data() })),
+    lastDoc: snap.docs[snap.docs.length - 1] ?? null,
+    hasMore: snap.docs.length === PAGE_SIZE,
+  }
 }
 
 export const getAppointmentsByStatus = async (facilityId, status) => {

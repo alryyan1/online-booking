@@ -1,4 +1,8 @@
 import { useEffect, useState } from 'react'
+import { db } from '../../services/firebase'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { getAllFacilities } from '../../services/facilityService'
+import { COLLECTIONS } from '../../utils/constants'
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
@@ -55,11 +59,14 @@ const SystemUsers = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
+  const [facilities, setFacilities] = useState([])
+  const [userFacilityMap, setUserFacilityMap] = useState({}) // uid → facilityId
 
   // Edit dialog
   const [editUser, setEditUser] = useState(null)
   const [editRole, setEditRole] = useState('')
   const [editDisabled, setEditDisabled] = useState(false)
+  const [editFacilityId, setEditFacilityId] = useState('')
   const [saving, setSaving] = useState(false)
 
   const fetchUsers = async () => {
@@ -77,17 +84,40 @@ const SystemUsers = () => {
     }
   }
 
-  useEffect(() => { fetchUsers() }, [])
+  useEffect(() => {
+    fetchUsers()
+    getAllFacilities().then(setFacilities).catch(console.error)
+  }, [])
 
-  const openEdit = (u) => {
+  // After users load, fetch their facilityIds from Firestore in bulk
+  useEffect(() => {
+    if (!users.length) return
+    Promise.all(
+      users.map(async (u) => {
+        try {
+          const snap = await getDoc(doc(db, COLLECTIONS.USERS, u.uid))
+          return [u.uid, snap.exists() ? (snap.data().facilityId || null) : null]
+        } catch { return [u.uid, null] }
+      })
+    ).then((entries) => setUserFacilityMap(Object.fromEntries(entries)))
+  }, [users])
+
+  const openEdit = async (u) => {
     setEditUser(u)
     setEditRole(u.customClaims?.role || 'patient')
     setEditDisabled(u.disabled)
+    setEditFacilityId('')
+    // Load current facilityId from Firestore
+    try {
+      const snap = await getDoc(doc(db, COLLECTIONS.USERS, u.uid))
+      if (snap.exists()) setEditFacilityId(snap.data().facilityId || '')
+    } catch { /* ignore */ }
   }
 
   const handleSave = async () => {
     setSaving(true)
     try {
+      // 1. Update Auth claims + disabled via admin API
       const res = await fetch(`${ADMIN_API}/auth-users/${editUser.uid}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -95,6 +125,21 @@ const SystemUsers = () => {
       })
       if (!res.ok) throw new Error('فشل التحديث')
       const updated = await res.json()
+
+      // 2. Save facilityId to Firestore users collection
+      const selectedFacility = facilities.find((f) => f.id === editFacilityId)
+      await setDoc(
+        doc(db, COLLECTIONS.USERS, editUser.uid),
+        {
+          facilityId: editFacilityId || null,
+          facilityName: selectedFacility?.name || null,
+          role: editRole,
+          email: editUser.email || null,
+          displayName: editUser.displayName || null,
+        },
+        { merge: true }
+      )
+
       setUsers((prev) => prev.map((u) => u.uid === updated.uid
         ? { ...u, disabled: updated.disabled, customClaims: updated.customClaims }
         : u
@@ -172,6 +217,7 @@ const SystemUsers = () => {
                 <TableRow>
                   <TableCell>المستخدم</TableCell>
                   <TableCell align="center">الدور</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>المنشأة</TableCell>
                   <TableCell align="center">التحقق</TableCell>
                   <TableCell align="center">الحالة</TableCell>
                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>مزود الدخول</TableCell>
@@ -197,6 +243,15 @@ const SystemUsers = () => {
                       </TableCell>
                       <TableCell align="center">
                         <Chip size="small" label={meta.label} color={meta.color} variant="outlined" />
+                      </TableCell>
+                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                        {(() => {
+                          const fid = userFacilityMap[u.uid]
+                          const facility = fid ? facilities.find((f) => f.id === fid) : null
+                          return facility
+                            ? <Chip size="small" label={facility.name} variant="outlined" color="primary" />
+                            : <Typography variant="caption" color="text.disabled">—</Typography>
+                        })()}
                       </TableCell>
                       <TableCell align="center">
                         {u.emailVerified
@@ -251,6 +306,22 @@ const SystemUsers = () => {
                 </MenuItem>
               ))}
             </TextField>
+
+            <TextField
+              select
+              label="المنشأة المرتبطة"
+              value={editFacilityId}
+              onChange={(e) => setEditFacilityId(e.target.value)}
+              fullWidth
+              size="small"
+              helperText="اختر المنشأة التي ينتمي إليها هذا المستخدم"
+            >
+              <MenuItem value=""><em>بدون منشأة</em></MenuItem>
+              {facilities.map((f) => (
+                <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>
+              ))}
+            </TextField>
+
             <FormControlLabel
               control={<Switch checked={editDisabled} onChange={(e) => setEditDisabled(e.target.checked)} color="error" />}
               label={<Typography variant="body2">{editDisabled ? 'الحساب معطل' : 'الحساب نشط'}</Typography>}

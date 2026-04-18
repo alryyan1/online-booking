@@ -1,14 +1,13 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { createHashRouter, Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import ProtectedRoute from '../components/common/ProtectedRoute'
-import { ROLES, getRedirectPath, getLandingPath } from '../utils/constants'
+import Navbar from '../components/common/Navbar'
 
 
-// Auth pages
+// Auth
 import Login from '../pages/auth/Login'
 
-
-// Super Admin pages
+// Super Admin
 import SuperAdminDashboard from '../pages/superadmin/SuperAdminDashboard'
 import FacilityManagement from '../pages/superadmin/FacilityManagement'
 import CentralDoctors from '../pages/superadmin/CentralDoctors'
@@ -17,8 +16,7 @@ import InsuranceCompanies from '../pages/superadmin/InsuranceCompanies'
 import AdminFacilityDetail from '../pages/superadmin/AdminFacilityDetail'
 import SystemUsers from '../pages/superadmin/SystemUsers'
 
-
-// Call Center pages
+// Call Center
 import CallCenterDashboard from '../pages/callcenter/CallCenterDashboard'
 import CallCenterBookNow from '../pages/callcenter/CallCenterBookNow'
 import CallCenterBookToday from '../pages/callcenter/CallCenterBookToday'
@@ -29,99 +27,69 @@ import CallCenterSchedule from '../pages/callcenter/CallCenterSchedule'
 import NotFound from '../pages/NotFound'
 
 const GuestRoute = ({ children }) => {
-  const { currentUser, userRole, facilityId, loading } = useAuth()
+  const { currentUser, loading } = useAuth()
   if (loading) return null
-  if (currentUser) return <Navigate to={getLandingPath(userRole, facilityId)} replace />
+  if (currentUser) return <Navigate to="/callcenter/book-today" replace />
   return children
 }
 
-const AppRouter = () => (
-  <Routes>
-    {/* Root → redirect to login */}
-    <Route path="/" element={<Navigate to="/login" replace />} />
-
-    {/* Auth */}
-    <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
-
-
-    {/* Super Admin */}
-    <Route path="/superadmin" element={<Navigate to="/superadmin/dashboard" replace />} />
-    <Route
-      path="/superadmin/dashboard"
-      element={
-        <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-          <SuperAdminDashboard />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/superadmin/facilities"
-      element={
-        <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-          <FacilityManagement />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/superadmin/doctors"
-      element={
-        <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-          <CentralDoctors />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/superadmin/specialties"
-      element={
-        <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-          <MedicalSpecialties />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/superadmin/insurance"
-      element={
-        <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-          <InsuranceCompanies />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/superadmin/users"
-      element={
-        <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-          <SystemUsers />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/superadmin/facilities/:facilityId"
-      element={
-        <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-          <AdminFacilityDetail />
-        </ProtectedRoute>
-      }
-    />
-
-    {/* Facility */}
-    <Route
-      path="/admin/facilities/:facilityId"
-      element={
-        <ProtectedRoute>
-          <AdminFacilityDetail />
-        </ProtectedRoute>
-      }
-    />
-
-    {/* Call Center */}
-    <Route path="/callcenter/dashboard" element={<ProtectedRoute><CallCenterDashboard /></ProtectedRoute>} />
-    <Route path="/callcenter/book" element={<ProtectedRoute><CallCenterBookNow /></ProtectedRoute>} />
-    <Route path="/callcenter/book-today" element={<ProtectedRoute><CallCenterBookToday /></ProtectedRoute>} />
-    <Route path="/callcenter/appointments" element={<ProtectedRoute><CallCenterAppointments /></ProtectedRoute>} />
-    <Route path="/callcenter/schedule" element={<ProtectedRoute><CallCenterSchedule /></ProtectedRoute>} />
-
-    <Route path="*" element={<NotFound />} />
-  </Routes>
+// Layout with Navbar
+const AppLayout = () => (
+  <div className="min-h-screen flex flex-col">
+    <Navbar />
+    <main className="flex-1">
+      <Outlet />
+    </main>
+  </div>
 )
 
-export default AppRouter
+// Layout without Navbar (auth pages)
+const AuthLayout = () => <Outlet />
+
+const auth = (el) => <ProtectedRoute>{el}</ProtectedRoute>
+
+const router = createHashRouter([
+  {
+    path: '/',
+    children: [
+      // ── Auth pages (no Navbar) ──────────────────────────────
+      {
+        element: <AuthLayout />,
+        children: [
+          { index: true, element: <Navigate to="/login" replace /> },
+          { path: 'login', element: <GuestRoute><Login /></GuestRoute> },
+        ],
+      },
+
+      // ── App pages (with Navbar) ─────────────────────────────
+      {
+        element: <AppLayout />,
+        children: [
+          // Super Admin
+          { path: 'superadmin',                        element: auth(<SuperAdminDashboard />) },
+          { path: 'superadmin/facilities',             element: auth(<FacilityManagement />) },
+          { path: 'superadmin/facilities/:facilityId', element: auth(<AdminFacilityDetail />) },
+          { path: 'superadmin/doctors',                element: auth(<CentralDoctors />) },
+          { path: 'superadmin/specialties',            element: auth(<MedicalSpecialties />) },
+          { path: 'superadmin/insurance',              element: auth(<InsuranceCompanies />) },
+          { path: 'superadmin/users',                  element: auth(<SystemUsers />) },
+
+          // Facility
+          { path: 'admin/facilities/:facilityId',      element: auth(<AdminFacilityDetail />) },
+
+          // Call Center
+          { path: 'callcenter/dashboard',              element: auth(<CallCenterDashboard />) },
+          { path: 'callcenter/book',                   element: auth(<CallCenterBookNow />) },
+          { path: 'callcenter/book-today',             element: auth(<CallCenterBookToday />) },
+          { path: 'callcenter/appointments',           element: auth(<CallCenterAppointments />) },
+          { path: 'callcenter/schedule',               element: auth(<CallCenterSchedule />) },
+        ],
+      },
+
+      // 404
+      { path: '*', element: <NotFound /> },
+    ],
+  },
+])
+
+export default router

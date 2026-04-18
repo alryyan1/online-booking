@@ -9,22 +9,34 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null)
   const [userRole, setUserRole] = useState(null)
   const [facilityId, setFacilityId] = useState(null)
+  const [facilityName, setFacilityName] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setLoading(true)
-      if (user) {
-        setCurrentUser(user)
-        const { role, facilityId: fid } = await getUserRole(user)
-        setUserRole(role)
-        setFacilityId(fid)
-      } else {
+      try {
+        if (user) {
+          setCurrentUser(user)
+          const { role, facilityId: fid, facilityName: fname } = await getUserRole(user)
+          setUserRole(role)
+          setFacilityId(fid)
+          setFacilityName(fname)
+        } else {
+          setCurrentUser(null)
+          setUserRole(null)
+          setFacilityId(null)
+          setFacilityName(null)
+        }
+      } catch (err) {
+        console.error('Auth state error:', err)
         setCurrentUser(null)
         setUserRole(null)
         setFacilityId(null)
+        setFacilityName(null)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     })
     return unsubscribe
   }, [])
@@ -49,7 +61,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ currentUser, userRole, facilityId, loading, login, register, logout: logoutUser }}
+      value={{ currentUser, userRole, facilityId, facilityName, loading, login, register, logout: logoutUser }}
     >
       {children}
     </AuthContext.Provider>

@@ -3,7 +3,7 @@ import { createTheme } from '@mui/material/styles'
 const theme = createTheme({
   direction: 'rtl',
   typography: {
-    fontFamily: '"Noto Kufi Arabic", "Segoe UI", Arial, sans-serif',
+    fontFamily: '"Tajawal", "Segoe UI", Arial, sans-serif',
   },
   palette: {
     primary: {

@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@import "@fontsource/tajawal/arabic-400.css";
+@import "@fontsource/tajawal/arabic-500.css";
+@import "@fontsource/tajawal/arabic-700.css";
 
 * {
   box-sizing: border-box;
@@ -6,7 +9,7 @@
 
 body {
   margin: 0;
-  font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Tajawal', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   direction: rtl;
   background-color: #f8fafc;
 }

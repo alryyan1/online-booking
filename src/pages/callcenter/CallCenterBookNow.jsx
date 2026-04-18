@@ -64,7 +64,7 @@ const CallCenterBookNow = () => {
   const [listTab, setListTab] = useState(0)
 
   const loadData = async () => {
-    if (!facilityId) return
+    if (!facilityId) { setLoading(false); return }
     setLoading(true)
     try {
       const allSpecs = await getSpecializations(facilityId)

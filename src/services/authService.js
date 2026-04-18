@@ -78,31 +78,38 @@ export const adminRegisterUser = async (email, password, displayName, role, faci
 export const logout = () => signOut(auth)
 
 export const getUserRole = async (user) => {
-  if (!user) return { role: null, facilityId: null }
+  if (!user) return { role: null, facilityId: null, facilityName: null }
 
-  // 1. Check Firebase custom claims (set via admin API → SystemUsers page)
+  // Always read Firestore user doc for facilityId + facilityName
+  let firestoreFacilityId = null
+  let firestoreFacilityName = null
+  try {
+    const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, user.uid))
+    if (userDoc.exists()) {
+      const d = userDoc.data()
+      firestoreFacilityId = d.facilityId || d.centerId || null
+      firestoreFacilityName = d.facilityName || null
+    }
+  } catch { /* ignore */ }
+
+  // 1. Check Firebase custom claims
   try {
     const tokenResult = await user.getIdTokenResult(true)
     const claimRole = tokenResult.claims.role
     if (claimRole) {
-      // For facility admin claim, also resolve their facilityId from Firestore
-      if (claimRole === ROLES.FACILITY_ADMIN) {
-        const q = query(collection(db, COLLECTIONS.FACILITIES), where('adminEmail', '==', user.email))
-        const snap = await getDocs(q)
-        return { role: claimRole, facilityId: snap.empty ? null : snap.docs[0].id }
-      }
-      return { role: claimRole, facilityId: null }
+      return { role: claimRole, facilityId: firestoreFacilityId, facilityName: firestoreFacilityName }
     }
-  } catch { /* token read failed, fall through */ }
+  } catch { /* fall through */ }
 
-  // 2. Check Firestore users collection (call center / patient stored with role field)
-  const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, user.uid))
-  if (userDoc.exists()) {
-    const userData = userDoc.data()
-    const role = userData.role || (userData.userType === 'callCenter' ? ROLES.CALL_CENTER : ROLES.PATIENT)
-    const facilityId = userData.facilityId || userData.centerId || null
-    return { role, facilityId }
-  }
+  // 2. Fall back to Firestore role field
+  try {
+    const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, user.uid))
+    if (userDoc.exists()) {
+      const d = userDoc.data()
+      const role = d.role || ROLES.PATIENT
+      return { role, facilityId: firestoreFacilityId, facilityName: firestoreFacilityName }
+    }
+  } catch { /* ignore */ }
 
-  return { role: ROLES.PATIENT, facilityId: null }
+  return { role: ROLES.PATIENT, facilityId: null, facilityName: null }
 }

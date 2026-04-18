@@ -15,20 +15,16 @@ export const FACILITY_ROLES = ['admin', 'callcenter', 'reception', 'doctor', 'fa
  * any facility role without facilityId → superadmin dashboard (fallback)
  */
 export const getRedirectPath = (role, facilityId) => {
-  if (role === ROLES.SUPER_ADMIN) return '/superadmin/dashboard'
+  if (role === ROLES.SUPER_ADMIN) return '/superadmin'
   if (facilityId) return `/admin/facilities/${facilityId}`
-  return '/superadmin/dashboard'
+  return '/superadmin'
 }
 
 /**
  * Returns the initial landing page after login.
  * Facility users start at 'Book Today'.
  */
-export const getLandingPath = (role, facilityId) => {
-  if (role === ROLES.SUPER_ADMIN) return '/superadmin/dashboard'
-  if (facilityId) return '/callcenter/book-today'
-  return '/superadmin/dashboard'
-}
+export const getLandingPath = () => '/callcenter/book-today'
 
 export const SUPER_ADMIN_EMAILS = [
   import.meta.env.VITE_SUPER_ADMIN_EMAIL_1,

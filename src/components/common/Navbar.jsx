@@ -13,23 +13,22 @@ import ListItemText from '@mui/material/ListItemText'
 import Divider from '@mui/material/Divider'
 import Box from '@mui/material/Box'
 import Avatar from '@mui/material/Avatar'
-import Chip from '@mui/material/Chip'
+
 import Stack from '@mui/material/Stack'
 import MenuIcon from '@mui/icons-material/Menu'
 import { useAuth } from '../../contexts/AuthContext'
-import { ROLES, getRedirectPath } from '../../utils/constants'
 import toast from 'react-hot-toast'
 
-const ROLE_LABELS = {
-  [ROLES.SUPER_ADMIN]:    { label: 'مشرف عام',   color: 'error' },
-  [ROLES.FACILITY_ADMIN]: { label: 'مشرف مرفق',  color: 'warning' },
-  [ROLES.CALL_CENTER]:    { label: 'كول سنتر',   color: 'secondary' },
-  [ROLES.PATIENT]:        { label: 'مريض',        color: 'success' },
-}
+const NAV_LINKS = [
+  { label: 'حجز اليوم',     to: '/callcenter/book-today' },
+  { label: 'حجز موعد',      to: '/callcenter/book' },
+  { label: 'الحجوزات',      to: '/callcenter/appointments' },
+  { label: 'جدول الأطباء',  to: '/callcenter/schedule' },
+  { label: 'إدارة النظام',  to: '/superadmin' },
+]
 
 const Navbar = () => {
-  const { currentUser, userRole, facilityId, logout } = useAuth()
- 
+  const { currentUser, facilityName, logout } = useAuth()
   const navigate = useNavigate()
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -43,17 +42,7 @@ const Navbar = () => {
     }
   }
 
-  const getDashboardLink = () => getRedirectPath(userRole, facilityId)
-
-  const navLinks = currentUser ? [
-    { label: 'لوحة التحكم', to: getDashboardLink() },
-    { label: 'حجز اليوم', to: '/callcenter/book-today' },
-    { label: 'حجز موعد', to: '/callcenter/book' },
-    { label: 'المواعيد', to: '/callcenter/appointments' },
-    { label: 'جدول الأطباء', to: '/callcenter/schedule' },
-  ] : [
-    { label: 'تسجيل الدخول', to: '/login' },
-  ]
+  const navLinks = currentUser ? NAV_LINKS : [{ label: 'تسجيل الدخول', to: '/login' }]
 
   const drawer = (
     <Box sx={{ width: 260 }} role="presentation" onClick={() => setDrawerOpen(false)}>
@@ -66,12 +55,10 @@ const Navbar = () => {
             </Avatar>
             <Box>
               <Typography variant="body2" fontWeight={600} noWrap>
-                {currentUser.displayName || currentUser.email || currentUser.userName || '—'}
+                {currentUser.displayName || currentUser.email || '—'}
               </Typography>
-              {userRole && (
-                <Chip size="small" label={ROLE_LABELS[userRole]?.label || userRole}
-                  color={ROLE_LABELS[userRole]?.color || 'default'} variant="outlined"
-                  sx={{ height: 18, fontSize: 10, '& .MuiChip-label': { px: 1 } }} />
+              {facilityName && (
+                <Typography variant="caption" color="primary.main" display="block">{facilityName}</Typography>
               )}
             </Box>
           </Stack>
@@ -103,7 +90,7 @@ const Navbar = () => {
       <AppBar position="sticky" color="inherit" elevation={1} sx={{ bgcolor: 'white', zIndex: 1200 }}>
         <Toolbar sx={{ justifyContent: 'space-between' }}>
           {/* Logo */}
-          <Button component={Link} to={currentUser ? getDashboardLink() : '/'} sx={{ p: 0.5, minWidth: 0 }}>
+          <Button component={Link} to={currentUser ? '/callcenter/book-today' : '/login'} sx={{ p: 0.5, minWidth: 0 }}>
             <Box component="img" src="/logo.png" alt="logo" sx={{ height: 40, objectFit: 'contain' }} />
           </Button>
 
@@ -117,20 +104,16 @@ const Navbar = () => {
 
             {currentUser && (
               <Stack direction="row" alignItems="center" spacing={1.5}>
-                <Stack sx={{ alignItems: 'flex-end' }}>
-                  <Typography variant="caption" fontWeight={600} noWrap sx={{ maxWidth: 180 }}>
-                    {currentUser.displayName || currentUser.email || currentUser.userName || '—'}
+                <Box sx={{ textAlign: 'right' }}>
+                  <Typography variant="caption" fontWeight={600} noWrap display="block" sx={{ maxWidth: 180 }}>
+                    {currentUser.displayName || currentUser.email || '—'}
                   </Typography>
-                  {userRole && (
-                    <Chip
-                      size="small"
-                      label={ROLE_LABELS[userRole]?.label || userRole}
-                      color={ROLE_LABELS[userRole]?.color || 'default'}
-                      variant="outlined"
-                      sx={{ height: 18, fontSize: 10, '& .MuiChip-label': { px: 1 } }}
-                    />
+                  {facilityName && (
+                    <Typography variant="caption" color="primary.main" noWrap display="block" sx={{ fontSize: '0.68rem', maxWidth: 180 }}>
+                      {facilityName}
+                    </Typography>
                   )}
-                </Stack>
+                </Box>
                 <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', fontSize: 14, fontWeight: 700 }}>
                   {(currentUser.displayName || currentUser.email || '?')[0].toUpperCase()}
                 </Avatar>
