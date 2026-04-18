@@ -120,9 +120,24 @@ const CallCenterBookToday = () => {
       toast.success('تم إلغاء الحجز')
       const phone = appt.patientPhone
       const date = appt.date || todayDate
+      const period = appt.period
+      
+      console.log(`[UI] Triggering notifications for cancellation:`, { phone, patient: appt.patientName, period })
+
       const [smsResult, waResult] = await Promise.all([
-        sendSMS(phone, buildCancelMessage({ patientName: appt.patientName, doctorName: listDoctor?.docName || '', date })),
-        sendCancelWhatsApp({ phone, patientName: appt.patientName, doctorName: listDoctor?.docName || '', date }),
+        sendSMS(phone, buildCancelMessage({ 
+          patientName: appt.patientName, 
+          doctorName: listDoctor?.docName || '', 
+          date, 
+          shift: period 
+        })),
+        sendCancelWhatsApp({ 
+          phone, 
+          patientName: appt.patientName, 
+          doctorName: listDoctor?.docName || '', 
+          date, 
+          shift: period 
+        }),
       ])
       if (smsResult.ok) toast.success('تم إرسال SMS الإلغاء')
       else toast.error(`فشل SMS: ${smsResult.error}`)

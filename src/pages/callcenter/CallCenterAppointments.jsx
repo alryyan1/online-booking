@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { getAppointmentsPaginated, updateAppointmentStatus, sendCancelWhatsApp } from '../../services/appointmentService'
+import { getAppointmentsPaginated, updateAppointmentStatus } from '../../services/appointmentService'
+import { sendSMS, sendCancelWhatsApp, buildCancelMessage } from '../../services/notificationService'
 import { formatDate } from '../../utils/bookingUtils'
 import { APPOINTMENT_STATUS } from '../../utils/constants'
 import Box from '@mui/material/Box'
@@ -102,7 +103,27 @@ const CallCenterAppointments = () => {
       await updateAppointmentStatus(facilityId, id, APPOINTMENT_STATUS.CANCELED)
       setAppointments((prev) => prev.map((a) => a.id === id ? { ...a, status: APPOINTMENT_STATUS.CANCELED } : a))
       toast.success('تم إلغاء الحجز')
-      if (aptData) sendCancelWhatsApp(aptData)
+      if (aptData) {
+        const phone = aptData.patientPhone
+        const date = aptData.date
+        const period = aptData.period
+        
+        Promise.all([
+          sendSMS(phone, buildCancelMessage({ 
+            patientName: aptData.patientName, 
+            doctorName: aptData.doctorName, 
+            date, 
+            shift: period 
+          })),
+          sendCancelWhatsApp({ 
+            phone, 
+            patientName: aptData.patientName, 
+            doctorName: aptData.doctorName, 
+            date, 
+            shift: period 
+          })
+        ]).catch(err => console.error("Cancellation Notification Error:", err))
+      }
     } catch (err) {
       console.error(err)
       toast.error('حدث خطأ أثناء إلغاء الحجز')

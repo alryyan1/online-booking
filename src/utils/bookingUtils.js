@@ -30,8 +30,8 @@ export const getWorkingShifts = (doctor, date) => {
   if (!schedule) return null
   
   const shifts = []
-  if (schedule.morning) shifts.push({ type: 'morning', label: 'صباحي', ...schedule.morning })
-  if (schedule.evening) shifts.push({ type: 'evening', label: 'مسائي', ...schedule.evening })
+  if (schedule.morning) shifts.push({ type: 'morning', label: 'صباحاً', ...schedule.morning })
+  if (schedule.evening) shifts.push({ type: 'evening', label: 'مساءً', ...schedule.evening })
   
   return shifts.length > 0 ? shifts : null
 }

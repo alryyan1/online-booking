@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { getSpecializations, getDoctorsBySpec } from '../../services/facilityService'
 import { getBookedSlots, createCallCenterAppointment } from '../../services/appointmentService'
-import { getAvailableBookingDays, categorizeSlotsByShift } from '../../utils/bookingUtils'
+import { sendSMS, sendWhatsApp, buildBookingMessage } from '../../services/notificationService'
+import { getAvailableBookingDays, categorizeSlotsByShift, formatDate } from '../../utils/bookingUtils'
 import { APPOINTMENT_STATUS } from '../../utils/constants'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -162,6 +163,33 @@ const CallCenterBookNow = () => {
         patientName: patientData.name.trim(), patientPhone: patientData.phone.trim(),
       })
       toast.success('تم حجز الموعد بنجاح')
+
+      // --- [ارسال التنبيهات] ---
+      try {
+        const message = buildBookingMessage({
+          patientName: patientData.name.trim(),
+          doctorName: selectedDoctor.docName,
+          specialtyName: selectedSpec.specName,
+          date: selectedDayRender.date,
+          time: selectedShift.start,
+          shift: selectedShift.label,
+        })
+        const phone = patientData.phone.trim()
+        await Promise.all([
+          sendSMS(phone, message),
+          sendWhatsApp({ 
+            phone, 
+            patientName: patientData.name.trim(), 
+            doctorName: selectedDoctor.docName, 
+            date: selectedDayRender.date, 
+            shift: selectedShift.label 
+          }),
+        ])
+        console.log("Notifications triggered successfully")
+      } catch (notifyErr) {
+        console.error("Notification Error:", notifyErr)
+      }
+
       const key = `${selectedDoctor.id}_${selectedDayRender.date}`
       const slots = await getBookedSlots(facilityId, selectedDoctor.id, selectedDayRender.date)
       const counts = categorizeSlotsByShift(slots, selectedDoctor.workingSchedule?.[selectedDayRender.dayName])
@@ -231,8 +259,8 @@ const CallCenterBookNow = () => {
                       <TableRow>
                         <TableCell>الطبيب</TableCell>
                         <TableCell align="center">التاريخ المختار</TableCell>
-                        <TableCell align="center">الفترة الصباحية</TableCell>
-                        <TableCell align="center">الفترة المسائية</TableCell>
+                        <TableCell align="center">صباحاً</TableCell>
+                        <TableCell align="center">مساءً</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>

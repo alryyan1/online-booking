@@ -66,7 +66,8 @@ import {
   updateFacilityInsurance,
   deleteFacilityInsurance,
 } from '../../services/facilityService'
-import { getAppointments, updateAppointmentStatus, sendCancelWhatsApp } from '../../services/appointmentService'
+import { getAppointments, updateAppointmentStatus } from '../../services/appointmentService'
+import { sendSMS, sendCancelWhatsApp, buildCancelMessage } from '../../services/notificationService'
 import { getUsersByFacility, createFacilityUser, updateFacilityUser, deleteFacilityUser, deleteAuthUser } from '../../services/userService'
 import { adminRegisterUser } from '../../services/authService'
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
@@ -519,10 +520,10 @@ const SpecializationsTab = ({ facilityId }) => {
                   <TextField label="معرّف التخصص" name="specialization" value={docForm.specialization} onChange={handleDocField} fullWidth disabled inputProps={{ dir: 'ltr' }} />
                 </Grid>
                 <Grid item xs={6}>
-                  <TextField label="حد المرضى الصباحي" name="morningPatientLimit" type="number" value={docForm.morningPatientLimit} onChange={handleDocField} fullWidth inputProps={{ min: 0 }} />
+                  <TextField label="حد المرضى صباحاً" name="morningPatientLimit" type="number" value={docForm.morningPatientLimit} onChange={handleDocField} fullWidth inputProps={{ min: 0 }} />
                 </Grid>
                 <Grid item xs={6}>
-                  <TextField label="حد المرضى المسائي" name="eveningPatientLimit" type="number" value={docForm.eveningPatientLimit} onChange={handleDocField} fullWidth inputProps={{ min: 0 }} />
+                  <TextField label="حد المرضى مساءً" name="eveningPatientLimit" type="number" value={docForm.eveningPatientLimit} onChange={handleDocField} fullWidth inputProps={{ min: 0 }} />
                 </Grid>
               </Grid>
               <Stack direction="row" spacing={2}>
@@ -564,7 +565,7 @@ const SpecializationsTab = ({ facilityId }) => {
                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }} flexWrap="wrap">
                           <FormControlLabel
                             control={<Checkbox checked={row.morning.enabled} onChange={() => toggleShift(i, 'morning')} size="small" color="warning" />}
-                            label={<Stack direction="row" spacing={0.5} alignItems="center"><WbSunnyIcon sx={{ fontSize: 14, color: 'warning.main' }} /><Typography variant="caption">صباحي</Typography></Stack>}
+                            label={<Stack direction="row" spacing={0.5} alignItems="center"><WbSunnyIcon sx={{ fontSize: 14, color: 'warning.main' }} /><Typography variant="caption">صباحاً</Typography></Stack>}
                           />
                           {row.morning.enabled && (
                             <Stack direction="row" spacing={1} alignItems="center">
@@ -577,7 +578,7 @@ const SpecializationsTab = ({ facilityId }) => {
                         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                           <FormControlLabel
                             control={<Checkbox checked={row.evening.enabled} onChange={() => toggleShift(i, 'evening')} size="small" color="secondary" />}
-                            label={<Stack direction="row" spacing={0.5} alignItems="center"><NightsStayIcon sx={{ fontSize: 14, color: 'secondary.main' }} /><Typography variant="caption">مسائي</Typography></Stack>}
+                            label={<Stack direction="row" spacing={0.5} alignItems="center"><NightsStayIcon sx={{ fontSize: 14, color: 'secondary.main' }} /><Typography variant="caption">مساءً</Typography></Stack>}
                           />
                           {row.evening.enabled && (
                             <Stack direction="row" spacing={1} alignItems="center">
@@ -636,9 +637,29 @@ const AppointmentsTab = ({ facilityId }) => {
       await updateAppointmentStatus(facilityId, id, APPOINTMENT_STATUS.CANCELED)
       toast.success('تم إلغاء الحجز بنجاح')
       
-      // WhatsApp notification
+      // Notifications
       if (aptData) {
-        sendCancelWhatsApp(aptData)
+        const phone = aptData.patientPhone
+        const date = aptData.date
+        const period = aptData.period
+        
+        console.log(`[Admin UI] Triggering notifications for cancellation:`, { phone, patient: aptData.patientName, period })
+
+        Promise.all([
+          sendSMS(phone, buildCancelMessage({ 
+            patientName: aptData.patientName, 
+            doctorName: aptData.doctorName, 
+            date, 
+            shift: period 
+          })),
+          sendCancelWhatsApp({ 
+            phone, 
+            patientName: aptData.patientName, 
+            doctorName: aptData.doctorName, 
+            date, 
+            shift: period 
+          })
+        ]).catch(err => console.error("Admin Notification Error:", err))
       }
 
       // Re-fetch appointments from server to ensure UI is in sync
