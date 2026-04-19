@@ -11,6 +11,18 @@ import Modal from '../../components/common/Modal'
 import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
 
+const rtf = new Intl.RelativeTimeFormat('ar', { numeric: 'auto' })
+const timeAgo = (ts) => {
+  if (!ts) return '—'
+  const d = ts.toDate ? ts.toDate() : new Date(ts)
+  const secs = Math.round((d - Date.now()) / 1000)
+  const abs = Math.abs(secs)
+  if (abs < 60)    return rtf.format(Math.round(secs), 'second')
+  if (abs < 3600)  return rtf.format(Math.round(secs / 60), 'minute')
+  if (abs < 86400) return rtf.format(Math.round(secs / 3600), 'hour')
+  return rtf.format(Math.round(secs / 86400), 'day')
+}
+
 const CallCenterBookToday = () => {
   const { facilityId } = useAuth()
   const [specialties, setSpecialties] = useState([])
@@ -372,7 +384,7 @@ const CallCenterBookToday = () => {
       </Modal>
 
       {/* ── Patient List Modal ── */}
-      <Modal isOpen={showPatientList} onClose={() => setShowPatientList(false)} title={`كشف د. ${listDoctor?.docName} — ${todayDate}`} size="md">
+      <Modal isOpen={showPatientList} onClose={() => setShowPatientList(false)} title={`كشف د. ${listDoctor?.docName} — ${todayDate}`} size="lg">
         {loadingList ? (
           <Spinner size="md" />
         ) : (
@@ -408,28 +420,56 @@ const CallCenterBookToday = () => {
                 </div>
               )
               return (
-                <div className="flex flex-col gap-1.5">
-                  {sectionAppts.map((appt, idx) => (
-                    <div key={appt.id} className="flex items-center gap-3 rounded-lg border border-gray-100 bg-white px-3 py-2 hover:bg-gray-50 transition">
-                      <span className="w-5 shrink-0 text-center text-xs font-bold text-gray-300">{idx + 1}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-900 leading-tight">{appt.patientName}</p>
-                        <p className="text-xs text-gray-400" dir="ltr">{appt.patientPhone}</p>
-                      </div>
-                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700" dir="ltr">
-                        {appt.time || appt.timeSlot}
-                      </span>
-                      <button
-                        disabled={cancelingId === appt.id}
-                        onClick={() => handleCancelAppointment(appt)}
-                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 transition disabled:opacity-50"
-                      >
-                        {cancelingId === appt.id
-                          ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
-                          : <X className="h-3.5 w-3.5" />}
-                      </button>
-                    </div>
-                  ))}
+                <div className="overflow-x-auto rounded-lg border border-gray-100">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-100 text-[11px] font-semibold text-gray-500">
+                        <th className="px-2 py-2 text-right w-7">#</th>
+                        <th className="px-2 py-2 text-right">الاسم</th>
+                        <th className="px-2 py-2 text-right">الهاتف</th>
+                        <th className="px-2 py-2 text-center">الوقت</th>
+                        <th className="px-2 py-2 text-center">تاريخ الحجز</th>
+                        <th className="px-2 py-2 text-center">منذ</th>
+                        <th className="px-2 py-2 text-center">إلغاء</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {sectionAppts.map((appt, idx) => {
+                        const createdAt = appt.createdAt?.toDate ? appt.createdAt.toDate() : appt.createdAt ? new Date(appt.createdAt) : null
+                        return (
+                          <tr key={appt.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-2 py-1.5 text-gray-300 font-bold text-center">{idx + 1}</td>
+                            <td className="px-2 py-1.5 font-bold text-gray-900 whitespace-nowrap">{appt.patientName}</td>
+                            <td className="px-2 py-1.5 text-blue-600 whitespace-nowrap" dir="ltr">{appt.patientPhone || '—'}</td>
+                            <td className="px-2 py-1.5 text-center">
+                              <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 font-bold text-blue-700" dir="ltr">
+                                {appt.time || appt.timeSlot || '—'}
+                              </span>
+                            </td>
+                            <td className="px-2 py-1.5 text-center text-gray-500 whitespace-nowrap" dir="ltr">
+                              {createdAt ? (
+                                <span>{createdAt.toLocaleDateString('ar-EG')} {createdAt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
+                              ) : '—'}
+                            </td>
+                            <td className="px-2 py-1.5 text-center text-gray-400 whitespace-nowrap">
+                              {timeAgo(appt.createdAt)}
+                            </td>
+                            <td className="px-2 py-1.5 text-center">
+                              <button
+                                disabled={cancelingId === appt.id}
+                                onClick={() => handleCancelAppointment(appt)}
+                                className="inline-flex items-center justify-center h-6 w-6 rounded border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 transition disabled:opacity-50"
+                              >
+                                {cancelingId === appt.id
+                                  ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
+                                  : <X className="h-3.5 w-3.5" />}
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )
             })()}
