@@ -88,9 +88,17 @@ export const getUserRole = async (user) => {
     if (userDoc.exists()) {
       const d = userDoc.data()
       firestoreFacilityId = d.facilityId || d.centerId || null
-      firestoreFacilityName = d.facilityName || null
+      firestoreFacilityName = d.facilityName || d.facilityname || null
     }
   } catch { /* ignore */ }
+
+  // If facilityName not stored on user doc, look it up from the facility
+  if (firestoreFacilityId && !firestoreFacilityName) {
+    try {
+      const facDoc = await getDoc(doc(db, 'medicalFacilities', firestoreFacilityId))
+      if (facDoc.exists()) firestoreFacilityName = facDoc.data().name || null
+    } catch { /* ignore */ }
+  }
 
   // 1. Check Firebase custom claims
   try {
