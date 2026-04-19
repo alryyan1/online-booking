@@ -12,6 +12,7 @@ import {
 } from '../ui/dropdown-menu'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '../ui/sheet'
 import { cn } from '../../lib/utils'
+import NotificationBell from './NotificationBell'
 import toast from 'react-hot-toast'
 
 const NAV_LINKS = [
@@ -23,7 +24,7 @@ const NAV_LINKS = [
 ]
 
 export default function Navbar() {
-  const { currentUser, facilityName, logout } = useAuth()
+  const { currentUser, facilityId, facilityName, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -45,7 +46,7 @@ export default function Navbar() {
     location.pathname === to || location.pathname.startsWith(to + '/')
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/80">
       <div className="flex h-14 items-center gap-4 px-4 md:px-6">
 
         {/* Logo */}
@@ -75,6 +76,9 @@ export default function Navbar() {
         {/* Spacer on mobile */}
         <div className="flex-1 md:hidden" />
 
+        {/* Notification bell */}
+        <NotificationBell facilityId={facilityId} />
+
         {/* User dropdown */}
         {currentUser && (
           <DropdownMenu>
@@ -84,11 +88,11 @@ export default function Navbar() {
                   <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block text-right leading-tight">
-                  <p className="text-xs font-semibold text-gray-900 max-w-[140px] truncate">
+                  <p className="text-xs font-semibold text-gray-900 max-w-35 truncate">
                     {currentUser.displayName || currentUser.email}
                   </p>
                   {facilityName && (
-                    <p className="text-[10px] text-blue-600 max-w-[140px] truncate">{facilityName}</p>
+                    <p className="text-[10px] text-blue-600 max-w-35 truncate">{facilityName}</p>
                   )}
                 </div>
                 <ChevronDown className="hidden md:block h-3.5 w-3.5 text-gray-400" />
