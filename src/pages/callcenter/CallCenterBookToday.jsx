@@ -5,37 +5,10 @@ import { getBookedSlots, createCallCenterAppointment, updateAppointmentStatus } 
 import { sendSMS, sendWhatsApp, sendCancelWhatsApp, buildBookingMessage, buildCancelMessage } from '../../services/notificationService'
 import { getWorkingShifts, getDayName, formatDate, categorizeSlotsByShift } from '../../utils/bookingUtils'
 import { APPOINTMENT_STATUS } from '../../utils/constants'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
-import TextField from '@mui/material/TextField'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableContainer from '@mui/material/TableContainer'
-import TableHead from '@mui/material/TableHead'
-import TableRow from '@mui/material/TableRow'
-import Avatar from '@mui/material/Avatar'
-import Chip from '@mui/material/Chip'
-import Stack from '@mui/material/Stack'
-import Tabs from '@mui/material/Tabs'
-import Tab from '@mui/material/Tab'
-import Card from '@mui/material/Card'
-import InputAdornment from '@mui/material/InputAdornment'
-import DialogActions from '@mui/material/DialogActions'
-import Tooltip from '@mui/material/Tooltip'
-import IconButton from '@mui/material/IconButton'
-import SearchIcon from '@mui/icons-material/Search'
-import ClearIcon from '@mui/icons-material/Clear'
-import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
-import PersonIcon from '@mui/icons-material/Person'
-import FlashOnIcon from '@mui/icons-material/FlashOn'
-import WbSunnyIcon from '@mui/icons-material/WbSunny'
-import NightsStayIcon from '@mui/icons-material/NightsStay'
-import ListAltIcon from '@mui/icons-material/ListAlt'
-import CircularProgress from '@mui/material/CircularProgress'
+import { Search, X, Stethoscope, User, Zap, Sun, Moon, ClipboardList } from 'lucide-react'
 import Spinner from '../../components/common/Spinner'
 import Modal from '../../components/common/Modal'
+import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
 
 const CallCenterBookToday = () => {
@@ -60,7 +33,7 @@ const CallCenterBookToday = () => {
   const [listDoctor, setListDoctor] = useState(null)
   const [listAppointments, setListAppointments] = useState([])
   const [loadingList, setLoadingList] = useState(false)
-  const [listTab, setListTab] = useState(0)
+  const [listTab, setListTab] = useState('morning')
   const [cancelingId, setCancelingId] = useState(null)
 
   const loadData = async () => {
@@ -96,10 +69,10 @@ const CallCenterBookToday = () => {
     } catch (err) { console.error(err) }
   }
 
-  const handleOpenPatientList = async (doctor, spec) => {
+  const handleOpenPatientList = async (doctor) => {
     setListDoctor(doctor)
     setListAppointments([])
-    setListTab(0)
+    setListTab('morning')
     setShowPatientList(true)
     setLoadingList(true)
     try {
@@ -177,8 +150,10 @@ const CallCenterBookToday = () => {
       const slots = await getBookedSlots(facilityId, selectedDoctor.id, todayDate)
       const counts = categorizeSlotsByShift(slots, selectedDoctor.workingSchedule?.[todayDayName])
       setBookedCounts((prev) => ({ ...prev, [selectedDoctor.id]: counts }))
-      setShowFormModal(false); setPatientData({ name: '', phone: '' })
-      setSelectedDoctor(null); setSelectedShift(null)
+      setShowFormModal(false)
+      setPatientData({ name: '', phone: '' })
+      setSelectedDoctor(null)
+      setSelectedShift(null)
     } catch (err) { console.error(err); toast.error('حدث خطأ أثناء إتمام الحجز') }
     finally { setIsBooking(false) }
   }
@@ -195,224 +170,280 @@ const CallCenterBookToday = () => {
 
   if (loading) return <Spinner size="lg" />
 
-  const cellSx = { py: 0.75, fontSize: '0.8rem' }
-  const headSx = { py: 1, fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', whiteSpace: 'nowrap' }
+  // ── Shift cell ──────────────────────────────────────────────────
+  const ShiftCell = ({ doc, spec, shift }) => {
+    if (!shift) return (
+      <td className="px-3 py-2 text-center text-xs text-gray-300 whitespace-nowrap">—</td>
+    )
+    const counts = bookedCounts[doc.id] || { morning: 0, evening: 0 }
+    const hasCounts = !!bookedCounts[doc.id]
+    const limit = doc[shift.type + 'PatientLimit'] || 0
+    const booked = counts[shift.type] || 0
+    const isFull = limit > 0 && booked >= limit
+
+    return (
+      <td className="px-3 py-2 text-center whitespace-nowrap">
+        <div className="flex items-center justify-center gap-1.5">
+          <span className={cn(
+            'inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold tabular-nums',
+            isFull
+              ? 'border-red-200 bg-red-50 text-red-600'
+              : hasCounts
+                ? 'border-green-200 bg-green-50 text-green-700'
+                : 'border-gray-200 bg-gray-50 text-gray-400'
+          )}>
+            {hasCounts ? `${booked}/${limit}` : '—'}
+          </span>
+          <button
+            disabled={isFull}
+            onMouseEnter={() => fetchDoctorCounts(doc)}
+            onClick={() => { setSelectedDoctor(doc); setSelectedSpec(spec); setSelectedShift(shift); setShowFormModal(true) }}
+            className={cn(
+              'rounded px-2.5 py-0.5 text-xs font-bold transition',
+              isFull
+                ? 'border border-red-200 text-red-400 cursor-not-allowed opacity-60'
+                : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
+            )}
+          >
+            {isFull ? 'مغلق' : 'حجز'}
+          </button>
+        </div>
+      </td>
+    )
+  }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 2, md: 3 }, py: 2.5 }}>
+    <div className="mx-auto max-w-5xl px-4 py-5 md:px-6">
 
-      {/* Header */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Chip label="LIVE" color="error" size="small" icon={<FlashOnIcon />} sx={{ fontWeight: 700, height: 22, fontSize: '0.7rem' }} />
-          <Typography variant="h6" fontWeight={700}>حجز اليوم — {todayDate}</Typography>
-        </Stack>
-        <TextField
-          size="small"
-          placeholder="بحث..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 16 }} /></InputAdornment>,
-            endAdornment: searchTerm ? (
-              <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setSearchTerm('')}><ClearIcon sx={{ fontSize: 15 }} /></IconButton>
-              </InputAdornment>
-            ) : null,
-          }}
-          sx={{ width: 200, '& .MuiInputBase-root': { fontSize: '0.82rem' } }}
-        />
-      </Stack>
+      {/* ── Header ── */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-bold text-red-600 uppercase tracking-wide">
+            <Zap className="h-3 w-3" /> LIVE
+          </span>
+          <h1 className="text-base font-bold text-gray-900">حجز اليوم — {todayDate}</h1>
+        </div>
 
+        {/* Search */}
+        <div className="relative w-48">
+          <Search className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="بحث..."
+            className="w-full rounded-md border border-gray-200 bg-white py-1.5 pr-8 pl-7 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Empty states ── */}
       {specialties.length === 0 ? (
-        <Card sx={{ textAlign: 'center', py: 8 }}>
-          <MedicalServicesIcon sx={{ fontSize: 48, color: 'grey.300', mb: 1.5 }} />
-          <Typography variant="body2" color="text.secondary">لا يوجد أطباء مداومون اليوم</Typography>
-        </Card>
+        <div className="flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-white py-16 text-center shadow-sm">
+          <Stethoscope className="mb-3 h-12 w-12 text-gray-200" />
+          <p className="text-sm text-gray-400">لا يوجد أطباء مداومون اليوم</p>
+        </div>
       ) : filteredSpecialties.length === 0 ? (
-        <Card sx={{ textAlign: 'center', py: 8 }}>
-          <Typography variant="body2" color="text.secondary">لا توجد نتائج تطابق "{searchTerm}"</Typography>
-          <Button onClick={() => setSearchTerm('')} size="small" sx={{ mt: 1 }}>عرض الكل</Button>
-        </Card>
+        <div className="flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-white py-16 text-center shadow-sm">
+          <p className="text-sm text-gray-400">لا توجد نتائج تطابق "{searchTerm}"</p>
+          <button onClick={() => setSearchTerm('')} className="mt-2 text-xs text-blue-600 hover:underline">عرض الكل</button>
+        </div>
       ) : (
-        <Card sx={{ overflow: 'hidden' }}>
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ bgcolor: 'grey.50' }}>
-                  <TableCell sx={headSx}>التخصص</TableCell>
-                  <TableCell sx={headSx}>الطبيب</TableCell>
-                  <TableCell sx={{ ...headSx, textAlign: 'center' }}>الكشف</TableCell>
-                  <TableCell sx={{ ...headSx, textAlign: 'center' }}>
-                    <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5}>
-                      <WbSunnyIcon sx={{ fontSize: 13, color: 'warning.main' }} />
-                      <span>صباحاً</span>
-                    </Stack>
-                  </TableCell>
-                  <TableCell sx={{ ...headSx, textAlign: 'center' }}>
-                    <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5}>
-                      <NightsStayIcon sx={{ fontSize: 13, color: 'secondary.main' }} />
-                      <span>مساءً</span>
-                    </Stack>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+
+        /* ── Table ── */
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50 text-xs font-semibold text-gray-500">
+                  <th className="px-3 py-2.5 text-right">التخصص</th>
+                  <th className="px-3 py-2.5 text-right">الطبيب</th>
+                  <th className="px-3 py-2.5 text-center">الكشف</th>
+                  <th className="px-3 py-2.5 text-center">
+                    <span className="flex items-center justify-center gap-1">
+                      <Sun className="h-3.5 w-3.5 text-amber-400" /> صباحاً
+                    </span>
+                  </th>
+                  <th className="px-3 py-2.5 text-center">
+                    <span className="flex items-center justify-center gap-1">
+                      <Moon className="h-3.5 w-3.5 text-indigo-400" /> مساءً
+                    </span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
                 {filteredSpecialties.flatMap((spec) =>
                   spec.doctors.map((doc) => {
                     const shifts = getWorkingShifts(doc, today) || []
                     const morningShift = shifts.find((s) => s.type === 'morning')
                     const eveningShift = shifts.find((s) => s.type === 'evening')
-                    const counts = bookedCounts[doc.id] || { morning: 0, evening: 0 }
-                    const hasCounts = !!bookedCounts[doc.id]
-
-                    const ShiftCell = ({ shift }) => {
-                      if (!shift) return (
-                        <TableCell align="center" sx={cellSx}>
-                          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.72rem' }}>—</Typography>
-                        </TableCell>
-                      )
-                      const limit = doc[shift.type + 'PatientLimit'] || 0
-                      const booked = counts[shift.type] || 0
-                      const isFull = limit > 0 && booked >= limit
-                      return (
-                        <TableCell align="center" sx={cellSx}>
-                          <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5}>
-                            <Chip
-                              size="small"
-                              label={hasCounts ? `${booked}/${limit}` : '—'}
-                              color={isFull ? 'error' : hasCounts ? 'success' : 'default'}
-                              variant="outlined"
-                              sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700, minWidth: 44 }}
-                            />
-                            <Button
-                              size="small"
-                              variant={isFull ? 'outlined' : 'contained'}
-                              color={isFull ? 'error' : 'primary'}
-                              disabled={isFull}
-                              disableElevation
-                              onMouseEnter={() => fetchDoctorCounts(doc)}
-                              onClick={() => { setSelectedDoctor(doc); setSelectedSpec(spec); setSelectedShift(shift); setShowFormModal(true) }}
-                              sx={{ py: 0.2, px: 1.2, minWidth: 0, fontSize: '0.75rem', fontWeight: 700 }}
-                            >
-                              {isFull ? 'مغلق' : 'حجز'}
-                            </Button>
-                          </Stack>
-                        </TableCell>
-                      )
-                    }
 
                     return (
-                      <TableRow key={doc.id} hover sx={{ '& td': { borderBottom: '1px solid', borderColor: 'grey.100' } }}>
-                        <TableCell sx={cellSx}>
-                          <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ fontSize: '0.78rem' }}>
-                            {spec.specName}
-                          </Typography>
-                        </TableCell>
-                        <TableCell sx={cellSx}>
-                          <Stack direction="row" spacing={1} alignItems="center">
-                            <Avatar src={doc.photoUrl} sx={{ width: 28, height: 28, bgcolor: 'primary.50' }}>
-                              <PersonIcon sx={{ fontSize: 15 }} color="primary" />
-                            </Avatar>
-                            <Box>
-                              <Typography fontWeight={700} sx={{ fontSize: '0.82rem', lineHeight: 1.2 }}>{doc.docName}</Typography>
+                      <tr key={doc.id} className="hover:bg-gray-50/60 transition-colors">
+                        <td className="px-3 py-2 text-xs font-semibold text-gray-500 whitespace-nowrap">
+                          {spec.specName}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 overflow-hidden">
+                              {doc.photoUrl
+                                ? <img src={doc.photoUrl} alt={doc.docName} className="h-full w-full object-cover" />
+                                : <User className="h-3.5 w-3.5 text-blue-400" />}
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-gray-900 leading-tight">{doc.docName}</p>
                               {doc.phoneNumber && (
-                                <Typography variant="caption" color="text.disabled" dir="ltr" sx={{ fontSize: '0.68rem' }}>{doc.phoneNumber}</Typography>
+                                <p className="text-[11px] text-gray-400" dir="ltr">{doc.phoneNumber}</p>
                               )}
-                            </Box>
-                          </Stack>
-                        </TableCell>
-                        <TableCell align="center" sx={cellSx}>
-                          <Tooltip title="عرض كشف المرضى">
-                            <IconButton
-                              size="small"
-                              color="secondary"
-                              onClick={() => handleOpenPatientList(doc, spec)}
-                              sx={{ width: 28, height: 28, border: '1px solid', borderColor: 'secondary.light', borderRadius: 1.2 }}
-                            >
-                              <ListAltIcon sx={{ fontSize: 15 }} />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                        <ShiftCell shift={morningShift} />
-                        <ShiftCell shift={eveningShift} />
-                      </TableRow>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <button
+                            onClick={() => handleOpenPatientList(doc)}
+                            title="عرض كشف المرضى"
+                            className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-100 transition"
+                          >
+                            <ClipboardList className="h-3.5 w-3.5" />
+                            كشف
+                          </button>
+                        </td>
+                        <ShiftCell doc={doc} spec={spec} shift={morningShift} />
+                        <ShiftCell doc={doc} spec={spec} shift={eveningShift} />
+                      </tr>
                     )
                   })
                 )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Card>
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
-      {/* Booking Form Modal */}
-      <Modal isOpen={showFormModal} onClose={() => setShowFormModal(false)} title={`حجز — د. ${selectedDoctor?.docName}`} size="md">
-        <Box sx={{ mb: 2.5, bgcolor: 'primary.50', borderRadius: 2, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="caption" color="primary.dark" fontWeight={700}>الموعد</Typography>
-            <Typography fontWeight={700} sx={{ fontSize: '0.9rem' }}>{todayDate} · {selectedShift?.label}</Typography>
-          </Box>
-          <Typography variant="h5" fontWeight={700} color="primary" dir="ltr">{selectedShift?.start}</Typography>
-        </Box>
-        <Box component="form" onSubmit={handleConfirmBooking} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField autoFocus label="اسم المريض الكامل" required value={patientData.name} onChange={(e) => setPatientData({ ...patientData, name: e.target.value })} fullWidth size="small" placeholder="أدخل الاسم الرباعي" />
-          <TextField label="رقم الهاتف" type="tel" required value={patientData.phone} onChange={(e) => setPatientData({ ...patientData, phone: e.target.value })} fullWidth size="small" inputProps={{ dir: 'ltr' }} placeholder="09XXXXXXXX" />
-          <DialogActions sx={{ px: 0, pb: 0 }}>
-            <Button onClick={() => setShowFormModal(false)} variant="outlined" color="inherit" size="small">إلغاء</Button>
-            <Button type="submit" variant="contained" color="success" disabled={isBooking}>
-              {isBooking ? 'جاري الحفظ...' : 'تأكيد الحجز'}
-            </Button>
-          </DialogActions>
-        </Box>
+      {/* ── Booking Form Modal ── */}
+      <Modal isOpen={showFormModal} onClose={() => setShowFormModal(false)} title={`حجز — د. ${selectedDoctor?.docName}`} size="sm">
+        <div className="mb-4 flex items-center justify-between rounded-lg bg-blue-50 px-4 py-3">
+          <div>
+            <p className="text-[11px] font-bold text-blue-700 mb-0.5">الموعد</p>
+            <p className="text-sm font-bold text-gray-900">{todayDate} · {selectedShift?.label}</p>
+          </div>
+          <span className="text-lg font-bold text-blue-700" dir="ltr">{selectedShift?.start}</span>
+        </div>
+
+        <form onSubmit={handleConfirmBooking} className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-700">اسم المريض الكامل</label>
+            <input
+              autoFocus
+              required
+              value={patientData.name}
+              onChange={(e) => setPatientData({ ...patientData, name: e.target.value })}
+              placeholder="أدخل الاسم الرباعي"
+              className="rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-700">رقم الهاتف</label>
+            <input
+              required
+              type="tel"
+              dir="ltr"
+              value={patientData.phone}
+              onChange={(e) => setPatientData({ ...patientData, phone: e.target.value })}
+              placeholder="09XXXXXXXX"
+              className="rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setShowFormModal(false)}
+              className="rounded-md border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
+            >
+              إلغاء
+            </button>
+            <button
+              type="submit"
+              disabled={isBooking}
+              className="flex items-center gap-1.5 rounded-md bg-green-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-green-700 transition disabled:opacity-60"
+            >
+              {isBooking && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
+              {isBooking ? 'جاري الحفظ...' : 'حفظ'}
+            </button>
+          </div>
+        </form>
       </Modal>
 
-      {/* Patient List Modal */}
+      {/* ── Patient List Modal ── */}
       <Modal isOpen={showPatientList} onClose={() => setShowPatientList(false)} title={`كشف د. ${listDoctor?.docName} — ${todayDate}`} size="md">
         {loadingList ? (
-          <Box sx={{ py: 4, textAlign: 'center' }}><CircularProgress size={28} /></Box>
+          <Spinner size="md" />
         ) : (
-          <Box sx={{ mt: 0.5 }}>
-            <Tabs value={listTab} onChange={(_, v) => setListTab(v)} variant="fullWidth" sx={{ borderBottom: 1, borderColor: 'divider', mb: 1.5, minHeight: 34, '& .MuiTabs-indicator': { height: 2 } }}>
-              <Tab icon={<WbSunnyIcon sx={{ fontSize: '0.85rem' }} />} iconPosition="start" label="صباحاً" sx={{ minHeight: 34, py: 0, fontSize: '0.8rem', fontWeight: 600 }} />
-              <Tab icon={<NightsStayIcon sx={{ fontSize: '0.85rem' }} />} iconPosition="start" label="مساءً" sx={{ minHeight: 34, py: 0, fontSize: '0.8rem', fontWeight: 600 }} />
-            </Tabs>
+          <div>
+            {/* Tabs */}
+            <div className="mb-3 flex rounded-lg border border-gray-100 bg-gray-50 p-0.5">
+              {[
+                { key: 'morning', label: 'صباحاً', icon: Sun },
+                { key: 'evening', label: 'مساءً', icon: Moon },
+              ].map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setListTab(key)}
+                  className={cn(
+                    'flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold transition',
+                    listTab === key
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Appointment list */}
             {(() => {
-              const currentType = listTab === 0 ? 'morning' : 'evening'
-              const sectionAppts = listAppointments.filter((a) => a.period === currentType)
+              const sectionAppts = listAppointments.filter((a) => a.period === listTab)
               if (sectionAppts.length === 0) return (
-                <Box sx={{ py: 5, textAlign: 'center' }}>
-                  <Typography variant="body2" color="text.disabled">لا يوجد حجوزات لهذه الفترة</Typography>
-                </Box>
+                <div className="py-10 text-center text-sm text-gray-400">
+                  لا يوجد حجوزات لهذه الفترة
+                </div>
               )
               return (
-                <Stack spacing={0.75}>
+                <div className="flex flex-col gap-1.5">
                   {sectionAppts.map((appt, idx) => (
-                    <Box key={appt.id} sx={{ px: 1.5, py: 1, border: 1, borderColor: 'divider', borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Typography variant="caption" color="text.disabled" fontWeight={700} sx={{ minWidth: 18, textAlign: 'center' }}>{idx + 1}</Typography>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.85rem' }}>{appt.patientName}</Typography>
-                        <Typography variant="caption" color="text.secondary" dir="ltr">{appt.patientPhone}</Typography>
-                      </Box>
-                      <Chip label={appt.time || appt.timeSlot} size="small" color="primary" variant="outlined" sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700 }} />
-                      <IconButton
-                        size="small"
-                        color="error"
+                    <div key={appt.id} className="flex items-center gap-3 rounded-lg border border-gray-100 bg-white px-3 py-2 hover:bg-gray-50 transition">
+                      <span className="w-5 shrink-0 text-center text-xs font-bold text-gray-300">{idx + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-900 leading-tight">{appt.patientName}</p>
+                        <p className="text-xs text-gray-400" dir="ltr">{appt.patientPhone}</p>
+                      </div>
+                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700" dir="ltr">
+                        {appt.time || appt.timeSlot}
+                      </span>
+                      <button
                         disabled={cancelingId === appt.id}
                         onClick={() => handleCancelAppointment(appt)}
-                        sx={{ width: 26, height: 26, border: '1px solid', borderColor: 'error.light', borderRadius: 1 }}
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 transition disabled:opacity-50"
                       >
-                        {cancelingId === appt.id ? <CircularProgress size={12} color="error" /> : <ClearIcon sx={{ fontSize: 14 }} />}
-                      </IconButton>
-                    </Box>
+                        {cancelingId === appt.id
+                          ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
+                          : <X className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
                   ))}
-                </Stack>
+                </div>
               )
             })()}
-          </Box>
+          </div>
         )}
       </Modal>
-    </Box>
+    </div>
   )
 }
 

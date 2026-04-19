@@ -2,41 +2,15 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { getSpecializations, getDoctorsBySpec } from '../../services/facilityService'
 import { getBookedSlots, createCallCenterAppointment } from '../../services/appointmentService'
-import { sendSMS, sendWhatsApp, buildBookingMessage } from '../../services/notificationService'
-import { getAvailableBookingDays, categorizeSlotsByShift, formatDate } from '../../utils/bookingUtils'
+import { getAvailableBookingDays, categorizeSlotsByShift } from '../../utils/bookingUtils'
 import { APPOINTMENT_STATUS } from '../../utils/constants'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
-import TextField from '@mui/material/TextField'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableContainer from '@mui/material/TableContainer'
-import TableHead from '@mui/material/TableHead'
-import TableRow from '@mui/material/TableRow'
-import Avatar from '@mui/material/Avatar'
-import Chip from '@mui/material/Chip'
-import Stack from '@mui/material/Stack'
-import Tabs from '@mui/material/Tabs'
-import Tab from '@mui/material/Tab'
-import Card from '@mui/material/Card'
-import InputAdornment from '@mui/material/InputAdornment'
-import DialogActions from '@mui/material/DialogActions'
-import Grid from '@mui/material/Grid'
-import SearchIcon from '@mui/icons-material/Search'
-import ClearIcon from '@mui/icons-material/Clear'
-import EventIcon from '@mui/icons-material/Event'
-import PersonIcon from '@mui/icons-material/Person'
-import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
-import WbSunnyIcon from '@mui/icons-material/WbSunny'
-import NightsStayIcon from '@mui/icons-material/NightsStay'
+import { Search, X, Stethoscope, User, CalendarDays, Sun, Moon } from 'lucide-react'
 import Spinner from '../../components/common/Spinner'
 import Modal from '../../components/common/Modal'
-import CircularProgress from '@mui/material/CircularProgress'
+import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
 
-const CallCenterBookNow = () => {
+export default function CallCenterBookNow() {
   const { facilityId } = useAuth()
   const [specialties, setSpecialties] = useState([])
   const [loading, setLoading] = useState(true)
@@ -62,7 +36,7 @@ const CallCenterBookNow = () => {
   const [listDate, setListDate] = useState('')
   const [listAppointments, setListAppointments] = useState([])
   const [loadingList, setLoadingList] = useState(false)
-  const [listTab, setListTab] = useState(0)
+  const [listTab, setListTab] = useState('morning')
 
   const loadData = async () => {
     if (!facilityId) { setLoading(false); return }
@@ -93,9 +67,7 @@ const CallCenterBookNow = () => {
         const doctor = finalSpecs.flatMap((s) => s.doctors).find((d) => d.id === docId)
         if (doctor) fetchCounts(doctor, day)
       })
-    } catch (err) {
-      console.error(err); toast.error('حدث خطأ أثناء تحميل البيانات')
-    }
+    } catch (err) { console.error(err); toast.error('حدث خطأ أثناء تحميل البيانات') }
     setLoading(false)
   }
 
@@ -116,28 +88,16 @@ const CallCenterBookNow = () => {
   const handleOpenPatientList = async (doctor) => {
     const activeDay = docSelectedDates[doctor.id]
     if (!activeDay) { toast.error('يرجى اختيار تاريخ أولاً'); return }
-    
-    setListDoctor(doctor)
-    setListDate(activeDay.date)
-    setListAppointments([])
-    setListTab(0)
-    setShowPatientList(true)
-    setLoadingList(true)
+    setListDoctor(doctor); setListDate(activeDay.date)
+    setListAppointments([]); setListTab('morning')
+    setShowPatientList(true); setLoadingList(true)
     try {
       const slots = await getBookedSlots(facilityId, doctor.id, activeDay.date)
-      // Exclude canceled appointments
-      const activeSlots = slots.filter(s => s.status !== APPOINTMENT_STATUS.CANCELED)
-      // Sort: Latest first (descending by createdAt)
-      const sorted = activeSlots.sort((a, b) => {
-        const timeA = a.createdAt?.seconds || 0
-        const timeB = b.createdAt?.seconds || 0
-        return timeB - timeA
-      })
-      setListAppointments(sorted)
-    } catch (err) {
-      console.error(err)
-      toast.error('حدث خطأ أثناء تحميل كشف الحجز')
-    }
+      const active = slots
+        .filter((s) => s.status !== APPOINTMENT_STATUS.CANCELED)
+        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+      setListAppointments(active)
+    } catch (err) { console.error(err); toast.error('حدث خطأ أثناء تحميل كشف الحجز') }
     setLoadingList(false)
   }
 
@@ -147,7 +107,8 @@ const CallCenterBookNow = () => {
   }
 
   const handleShiftSelect = (doctor, spec, day, shift) => {
-    setSelectedDoctor(doctor); setSelectedSpec(spec); setSelectedDayRender(day); setSelectedShift(shift)
+    setSelectedDoctor(doctor); setSelectedSpec(spec)
+    setSelectedDayRender(day); setSelectedShift(shift)
     setShowFormModal(true)
   }
 
@@ -163,33 +124,6 @@ const CallCenterBookNow = () => {
         patientName: patientData.name.trim(), patientPhone: patientData.phone.trim(),
       })
       toast.success('تم حجز الموعد بنجاح')
-
-      // --- [ارسال التنبيهات] ---
-      try {
-        const message = buildBookingMessage({
-          patientName: patientData.name.trim(),
-          doctorName: selectedDoctor.docName,
-          specialtyName: selectedSpec.specName,
-          date: selectedDayRender.date,
-          time: selectedShift.start,
-          shift: selectedShift.label,
-        })
-        const phone = patientData.phone.trim()
-        await Promise.all([
-          sendSMS(phone, message),
-          sendWhatsApp({ 
-            phone, 
-            patientName: patientData.name.trim(), 
-            doctorName: selectedDoctor.docName, 
-            date: selectedDayRender.date, 
-            shift: selectedShift.label 
-          }),
-        ])
-        console.log("Notifications triggered successfully")
-      } catch (notifyErr) {
-        console.error("Notification Error:", notifyErr)
-      }
-
       const key = `${selectedDoctor.id}_${selectedDayRender.date}`
       const slots = await getBookedSlots(facilityId, selectedDoctor.id, selectedDayRender.date)
       const counts = categorizeSlotsByShift(slots, selectedDoctor.workingSchedule?.[selectedDayRender.dayName])
@@ -203,248 +137,311 @@ const CallCenterBookNow = () => {
   const filteredSpecialties = specialties.map((spec) => {
     const term = searchTerm.toLowerCase().trim()
     if (!term) return spec
-    const specMatches = spec.specName.toLowerCase().includes(term)
-    const filteredDoctors = spec.doctors.filter((doc) => doc.docName.toLowerCase().includes(term))
-    if (specMatches) return spec
+    const filteredDoctors = spec.doctors.filter((d) => d.docName.toLowerCase().includes(term))
+    if (spec.specName.toLowerCase().includes(term)) return spec
     if (filteredDoctors.length > 0) return { ...spec, doctors: filteredDoctors }
     return null
   }).filter(Boolean)
 
   if (loading) return <Spinner size="lg" />
 
+  // ── Shift cell ──────────────────────────────────────────────────────────────
+  const ShiftCell = ({ doc, spec, activeDay, shiftType }) => {
+    const shift = activeDay?.shifts.find((s) => s.type === shiftType)
+    const countsKey = activeDay ? `${doc.id}_${activeDay.date}` : ''
+    const counts = bookedCounts[countsKey] || { morning: 0, evening: 0 }
+    const hasCounts = !!bookedCounts[countsKey]
+    const limit = doc[shiftType + 'PatientLimit'] || 0
+    const booked = counts[shiftType] || 0
+    const isFull = limit > 0 && booked >= limit
+    const Icon = shiftType === 'morning' ? Sun : Moon
+    const iconCls = shiftType === 'morning' ? 'text-amber-400' : 'text-indigo-400'
+
+    if (!shift) return (
+      <td className="px-3 py-2 text-center">
+        <span className="text-xs text-gray-300">غير متاح</span>
+      </td>
+    )
+
+    return (
+      <td className="px-3 py-2 text-center">
+        <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center gap-1">
+            <Icon className={cn('h-3 w-3', iconCls)} />
+            <span className="text-xs font-bold text-gray-700" dir="ltr">{shift.start}</span>
+          </div>
+          <span className={cn(
+            'rounded-full border px-2 py-0.5 text-[10px] font-bold tabular-nums',
+            isFull ? 'border-red-200 bg-red-50 text-red-600'
+              : hasCounts ? 'border-blue-200 bg-blue-50 text-blue-700'
+              : 'border-gray-200 bg-gray-50 text-gray-400'
+          )}>
+            {hasCounts ? `${booked}/${limit}` : '—/—'}
+          </span>
+          <button
+            disabled={isFull || (!hasCounts && loadingCounts)}
+            onClick={() => handleShiftSelect(doc, spec, activeDay, shift)}
+            className={cn(
+              'rounded px-3 py-0.5 text-xs font-bold transition',
+              isFull
+                ? 'border border-red-200 text-red-400 cursor-not-allowed opacity-60'
+                : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95 disabled:opacity-50'
+            )}
+          >
+            {isFull ? 'مغلق' : 'حجز'}
+          </button>
+        </div>
+      </td>
+    )
+  }
+
   return (
-    <Box sx={{ maxWidth: 1300, mx: 'auto', px: 3, py: 5 }}>
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 5 }}>
-        <Box>
-          <Typography variant="h5" fontWeight={700}>حجز موعد جديد</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>اختر الطبيب المناسب للمريض بناءً على المواعيد المتاحة.</Typography>
-        </Box>
-        <TextField size="small" placeholder="ابحث باسم الطبيب أو التخصص..." value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
-            endAdornment: searchTerm ? <InputAdornment position="end"><Button size="small" onClick={() => setSearchTerm('')} sx={{ minWidth: 0, p: 0.5 }}><ClearIcon fontSize="small" /></Button></InputAdornment> : null,
-          }}
-          sx={{ width: { xs: '100%', md: 320 } }}
-        />
-      </Box>
+    <div className="mx-auto max-w-5xl px-4 py-5 md:px-6">
 
-      <Stack spacing={4}>
-        {specialties.length === 0 ? (
-          <Card sx={{ textAlign: 'center', py: 10 }}>
-            <MedicalServicesIcon sx={{ fontSize: 60, color: 'grey.300', mb: 2 }} />
-            <Typography color="text.secondary">لا يوجد أطباء متاحون للحجز حالياً</Typography>
-          </Card>
-        ) : filteredSpecialties.length === 0 ? (
-          <Card sx={{ textAlign: 'center', py: 10 }}>
-            <Typography color="text.secondary">لا توجد نتائج تطابق "{searchTerm}"</Typography>
-            <Button onClick={() => setSearchTerm('')} size="small" sx={{ mt: 1 }}>عرض الكل</Button>
-          </Card>
-        ) : (
-          filteredSpecialties.map((spec) => (
-            <Box key={spec.id}>
-              <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-                <Avatar sx={{ width: 36, height: 36, bgcolor: 'secondary.main', fontSize: '1rem', fontWeight: 700 }}>
+      {/* ── Header ── */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-base font-bold text-gray-900">حجز موعد جديد</h1>
+          <p className="text-xs text-gray-400">اختر الطبيب والتاريخ المناسب للمريض</p>
+        </div>
+        <div className="relative w-64">
+          <Search className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="ابحث باسم الطبيب أو التخصص..."
+            className="w-full rounded-md border border-gray-200 bg-white py-1.5 pr-8 pl-7 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Empty states ── */}
+      {specialties.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-white py-20 text-center shadow-sm">
+          <Stethoscope className="mb-3 h-12 w-12 text-gray-200" />
+          <p className="text-sm text-gray-400">لا يوجد أطباء متاحون للحجز حالياً</p>
+        </div>
+      ) : filteredSpecialties.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-white py-20 text-center shadow-sm">
+          <p className="text-sm text-gray-400">لا توجد نتائج تطابق "{searchTerm}"</p>
+          <button onClick={() => setSearchTerm('')} className="mt-2 text-xs text-blue-600 hover:underline">عرض الكل</button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-5">
+          {filteredSpecialties.map((spec) => (
+            <div key={spec.id}>
+              {/* Specialty header */}
+              <div className="mb-2 flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
                   {spec.specName.charAt(0)}
-                </Avatar>
-                <Typography variant="h6" fontWeight={700}>{spec.specName}</Typography>
-                <Box sx={{ flex: 1, height: 1, bgcolor: 'divider' }} />
-                <Typography variant="caption" color="text.disabled">{spec.doctors.length} أطباء</Typography>
-              </Stack>
+                </div>
+                <h2 className="text-sm font-bold text-gray-800">{spec.specName}</h2>
+                <div className="flex-1 border-t border-gray-100" />
+                <span className="text-xs text-gray-400">{spec.doctors.length} أطباء</span>
+              </div>
 
-              <Card>
-                <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>الطبيب</TableCell>
-                        <TableCell align="center">التاريخ المختار</TableCell>
-                        <TableCell align="center">صباحاً</TableCell>
-                        <TableCell align="center">مساءً</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
+              {/* Doctors table */}
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50 text-xs font-semibold text-gray-500">
+                        <th className="px-3 py-2 text-right">الطبيب</th>
+                        <th className="px-3 py-2 text-center">التاريخ</th>
+                        <th className="px-3 py-2 text-center">
+                          <span className="flex items-center justify-center gap-1">
+                            <Sun className="h-3 w-3 text-amber-400" /> صباحاً
+                          </span>
+                        </th>
+                        <th className="px-3 py-2 text-center">
+                          <span className="flex items-center justify-center gap-1">
+                            <Moon className="h-3 w-3 text-indigo-400" /> مساءً
+                          </span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
                       {spec.doctors.map((doc) => {
                         const activeDay = docSelectedDates[doc.id]
-                        const countsKey = activeDay ? `${doc.id}_${activeDay.date}` : ''
-                        const counts = bookedCounts[countsKey] || { morning: 0, evening: 0 }
-                        const hasCounts = !!bookedCounts[countsKey]
-
-                        const ShiftCell = ({ shiftType }) => {
-                          const shift = activeDay?.shifts.find((s) => s.type === shiftType)
-                          if (!shift) return <TableCell align="center"><Typography variant="caption" color="text.disabled">غير متاح</Typography></TableCell>
-                          const limit = doc[shiftType + 'PatientLimit'] || 0
-                          const booked = counts[shiftType] || 0
-                          const isFull = limit > 0 && booked >= limit
-                          return (
-                            <TableCell align="center">
-                              <Stack alignItems="center" spacing={0.75}>
-                                <Typography variant="body2" fontWeight={700} dir="ltr">{shift.start}</Typography>
-                                <Chip size="small" label={hasCounts ? `${booked}/${limit}` : '—/—'}
-                                  color={isFull ? 'error' : hasCounts ? 'primary' : 'default'} variant="outlined" />
-                                <Button size="small" variant="contained" color="secondary" disabled={isFull || (!hasCounts && loadingCounts)}
-                                  onClick={() => handleShiftSelect(doc, spec, activeDay, shift)}>
-                                  {isFull ? 'مغلق' : 'حجز'}
-                                </Button>
-                              </Stack>
-                            </TableCell>
-                          )
-                        }
-
                         return (
-                          <TableRow key={doc.id} hover>
-                            <TableCell>
-                              <Stack 
-                                direction="row" 
-                                spacing={1.5} 
-                                alignItems="center"
+                          <tr key={doc.id} className="hover:bg-gray-50/60 transition-colors">
+                            {/* Doctor info */}
+                            <td className="px-3 py-2">
+                              <button
                                 onClick={() => handleOpenPatientList(doc)}
-                                sx={{ cursor: 'pointer', '&:hover': { opacity: 0.7 } }}
+                                className="flex items-center gap-2 text-right hover:opacity-70 transition"
                               >
-                                <Avatar src={doc.photoUrl} sx={{ width: 40, height: 40, bgcolor: 'primary.100' }}>
-                                  <PersonIcon fontSize="small" color="primary" />
-                                </Avatar>
-                                <Box>
-                                  <Typography fontWeight={600}>{doc.docName}</Typography>
-                                  <Typography variant="caption" color="text.secondary">{doc.phoneNumber || 'بدون رقم'}</Typography>
-                                </Box>
-                              </Stack>
-                            </TableCell>
-                            <TableCell align="center">
-                              <Button size="small" variant="outlined" startIcon={<EventIcon />}
-                                onClick={() => { setDoctorForDatePick(doc); setShowDatePickerModal(true) }}>
-                                {activeDay ? `${activeDay.dayName} ${activeDay.date.split('-').reverse().slice(0, 2).join('/')}` : 'اختر تاريخاً'}
-                              </Button>
-                            </TableCell>
-                            <ShiftCell shiftType="morning" />
-                            <ShiftCell shiftType="evening" />
-                          </TableRow>
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 overflow-hidden">
+                                  {doc.photoUrl
+                                    ? <img src={doc.photoUrl} alt={doc.docName} className="h-full w-full object-cover" />
+                                    : <User className="h-4 w-4 text-blue-400" />}
+                                </div>
+                                <div>
+                                  <p className="text-xs font-bold text-gray-900">{doc.docName}</p>
+                                  <p className="text-[11px] text-gray-400">{doc.phoneNumber || '—'}</p>
+                                </div>
+                              </button>
+                            </td>
+
+                            {/* Date picker */}
+                            <td className="px-3 py-2 text-center">
+                              <button
+                                onClick={() => { setDoctorForDatePick(doc); setShowDatePickerModal(true) }}
+                                className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-300 transition"
+                              >
+                                <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
+                                {activeDay
+                                  ? <span>{activeDay.dayName} {activeDay.date.split('-').reverse().slice(0, 2).join('/')}</span>
+                                  : <span className="text-gray-400">اختر تاريخاً</span>}
+                              </button>
+                            </td>
+
+                            <ShiftCell doc={doc} spec={spec} activeDay={activeDay} shiftType="morning" />
+                            <ShiftCell doc={doc} spec={spec} activeDay={activeDay} shiftType="evening" />
+                          </tr>
                         )
                       })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Card>
-            </Box>
-          ))
-        )}
-      </Stack>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* Patient Form Modal */}
-      <Modal isOpen={showFormModal} onClose={() => setShowFormModal(false)} title={`حجز موعد - ${selectedDoctor?.docName}`} size="md">
-        <Box sx={{ mb: 3, bgcolor: 'primary.50', borderRadius: 2, p: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="caption" color="primary.dark" fontWeight={700} sx={{ textTransform: 'uppercase' }}>الموعد المحدد</Typography>
-            <Typography fontWeight={700}>{selectedDayRender?.dayName}، {selectedDayRender?.date}</Typography>
-            <Typography variant="body2" color="primary">الفترة: {selectedShift?.label}</Typography>
-          </Box>
-          <Typography variant="h5" fontWeight={700} color="primary" dir="ltr">{selectedShift?.start}</Typography>
-        </Box>
-        <Box component="form" onSubmit={handleConfirmBooking} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField label="اسم المريض الكامل" required value={patientData.name} onChange={(e) => setPatientData({ ...patientData, name: e.target.value })} fullWidth placeholder="الاسم الرباعي" />
-          <TextField label="رقم الهاتف" type="tel" required value={patientData.phone} onChange={(e) => setPatientData({ ...patientData, phone: e.target.value })} fullWidth inputProps={{ dir: 'ltr' }} placeholder="09XXXXXXXX" />
-          <DialogActions sx={{ px: 0, pb: 0 }}>
-            <Button onClick={() => setShowFormModal(false)} variant="outlined" color="inherit">إلغاء</Button>
-            <Button type="submit" variant="contained" color="success" size="large" disabled={isBooking}>
-              {isBooking ? 'جاري الحفظ...' : 'تأكيد الحجز النهائي'}
-            </Button>
-          </DialogActions>
-        </Box>
+      {/* ── Booking Form Modal ── */}
+      <Modal isOpen={showFormModal} onClose={() => setShowFormModal(false)} title={`حجز موعد — د. ${selectedDoctor?.docName}`} size="sm">
+        <div className="mb-4 flex items-center justify-between rounded-lg bg-blue-50 px-4 py-3">
+          <div>
+            <p className="text-[11px] font-bold text-blue-700 mb-0.5">الموعد المحدد</p>
+            <p className="text-sm font-bold text-gray-900">{selectedDayRender?.dayName}، {selectedDayRender?.date}</p>
+            <p className="text-xs text-blue-600">الفترة: {selectedShift?.label}</p>
+          </div>
+          <span className="text-xl font-bold text-blue-700" dir="ltr">{selectedShift?.start}</span>
+        </div>
+        <form onSubmit={handleConfirmBooking} className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-700">اسم المريض الكامل</label>
+            <input
+              autoFocus required
+              value={patientData.name}
+              onChange={(e) => setPatientData({ ...patientData, name: e.target.value })}
+              placeholder="الاسم الرباعي"
+              className="rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-700">رقم الهاتف</label>
+            <input
+              required type="tel" dir="ltr"
+              value={patientData.phone}
+              onChange={(e) => setPatientData({ ...patientData, phone: e.target.value })}
+              placeholder="09XXXXXXXX"
+              className="rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <button type="button" onClick={() => setShowFormModal(false)}
+              className="rounded-md border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+              إلغاء
+            </button>
+            <button type="submit" disabled={isBooking}
+              className="flex items-center gap-1.5 rounded-md bg-green-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-green-700 transition disabled:opacity-60">
+              {isBooking && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
+              {isBooking ? 'جاري الحفظ...' : 'تأكيد الحجز'}
+            </button>
+          </div>
+        </form>
       </Modal>
 
-      {/* Date Picker Modal */}
-      <Modal isOpen={showDatePickerModal} onClose={() => setShowDatePickerModal(false)} title={`اختيار التاريخ - د. ${doctorForDatePick?.docName}`} size="md">
-        <Grid container spacing={1.5} sx={{ pb: 1 }}>
+      {/* ── Date Picker Modal ── */}
+      <Modal isOpen={showDatePickerModal} onClose={() => setShowDatePickerModal(false)} title={`اختيار التاريخ — د. ${doctorForDatePick?.docName}`} size="sm">
+        <div className="grid grid-cols-3 gap-2 pb-1 sm:grid-cols-4">
           {doctorForDatePick?.availableDays.map((day) => {
             const isSelected = docSelectedDates[doctorForDatePick.id]?.date === day.date
             return (
-              <Grid item xs={6} sm={3} key={day.date}>
-                <Card variant={isSelected ? 'elevation' : 'outlined'}
-                  sx={{ cursor: 'pointer', textAlign: 'center', p: 1.5, bgcolor: isSelected ? 'secondary.main' : 'background.paper', '&:hover': { bgcolor: isSelected ? 'secondary.dark' : 'grey.50' }, transition: 'all 0.15s' }}
-                  onClick={() => { handleDaySelect(doctorForDatePick, day); setShowDatePickerModal(false) }}>
-                  <Typography variant="caption" fontWeight={700} color={isSelected ? 'secondary.contrastText' : 'text.secondary'}>{day.dayName}</Typography>
-                  <Typography variant="body2" fontWeight={700} color={isSelected ? 'secondary.contrastText' : 'text.primary'}>
-                    {day.date.split('-').reverse().slice(0, 2).join('/')}
-                  </Typography>
-                  {isSelected && <Chip label="مختار" size="small" sx={{ mt: 0.5, bgcolor: 'rgba(255,255,255,0.25)', color: 'white', height: 18, fontSize: '0.6rem' }} />}
-                </Card>
-              </Grid>
+              <button
+                key={day.date}
+                onClick={() => { handleDaySelect(doctorForDatePick, day); setShowDatePickerModal(false) }}
+                className={cn(
+                  'flex flex-col items-center rounded-lg border px-2 py-2.5 text-center transition',
+                  isSelected
+                    ? 'border-blue-500 bg-blue-600 text-white shadow-sm'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'
+                )}
+              >
+                <span className={cn('text-[11px] font-semibold', isSelected ? 'text-blue-100' : 'text-gray-500')}>
+                  {day.dayName}
+                </span>
+                <span className="text-sm font-bold">
+                  {day.date.split('-').reverse().slice(0, 2).join('/')}
+                </span>
+                {isSelected && (
+                  <span className="mt-1 rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                    مختار
+                  </span>
+                )}
+              </button>
             )
           })}
-        </Grid>
+        </div>
       </Modal>
 
-      {/* Patient List Modal */}
-      <Modal 
-        isOpen={showPatientList} 
-        onClose={() => setShowPatientList(false)} 
-        title={`كشف حجوزات د. ${listDoctor?.docName} - ${listDate}`} 
-        size="md"
-      >
+      {/* ── Patient List Modal ── */}
+      <Modal isOpen={showPatientList} onClose={() => setShowPatientList(false)} title={`كشف د. ${listDoctor?.docName} — ${listDate}`} size="md">
         {loadingList ? (
-          <Box sx={{ py: 5, textAlign: 'center' }}><CircularProgress size={30} /></Box>
+          <Spinner size="md" />
         ) : (
-          <Box sx={{ mt: 1 }}>
-            <Tabs 
-              value={listTab} 
-              onChange={(e, v) => setListTab(v)} 
-              variant="fullWidth" 
-              sx={{ 
-                borderBottom: 1, 
-                borderColor: 'divider', 
-                mb: 2,
-                minHeight: 38,
-                '& .MuiTabs-indicator': { height: 2 }
-              }}
-            >
-              <Tab 
-                icon={<WbSunnyIcon sx={{ fontSize: '0.9rem' }} />} 
-                iconPosition="start" 
-                label="صباحاً" 
-                sx={{ minHeight: 38, py: 0, fontSize: '0.85rem', fontWeight: 600 }}
-              />
-              <Tab 
-                icon={<NightsStayIcon sx={{ fontSize: '0.9rem' }} />} 
-                iconPosition="start" 
-                label="مساءً" 
-                sx={{ minHeight: 38, py: 0, fontSize: '0.85rem', fontWeight: 600 }}
-              />
-            </Tabs>
+          <div>
+            <div className="mb-3 flex rounded-lg border border-gray-100 bg-gray-50 p-0.5">
+              {[
+                { key: 'morning', label: 'صباحاً', icon: Sun },
+                { key: 'evening', label: 'مساءً', icon: Moon },
+              ].map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setListTab(key)}
+                  className={cn(
+                    'flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold transition',
+                    listTab === key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" /> {label}
+                </button>
+              ))}
+            </div>
 
             {(() => {
-              const currentType = listTab === 0 ? 'morning' : 'evening'
-              const sectionAppts = listAppointments.filter(a => a.period === currentType)
-              
-              if (sectionAppts.length === 0) {
-                return (
-                  <Box sx={{ py: 6, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.disabled">لا يوجد حجوزات لهذه الفترة</Typography>
-                  </Box>
-                )
-              }
-
+              const sectionAppts = listAppointments.filter((a) => a.period === listTab)
+              if (!sectionAppts.length) return (
+                <div className="py-10 text-center text-sm text-gray-400">لا يوجد حجوزات لهذه الفترة</div>
+              )
               return (
-                <Stack spacing={1.5}>
+                <div className="flex flex-col gap-1.5">
                   {sectionAppts.map((appt, idx) => (
-                    <Box key={appt.id} sx={{ p: 1.5, border: 1, borderColor: 'divider', borderRadius: 2, bgcolor: 'background.paper', display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar sx={{ width: 28, height: 28, bgcolor: 'grey.100', color: 'text.secondary', fontSize: '0.85rem', fontWeight: 700 }}>
-                        {idx + 1}
-                      </Avatar>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight={700}>{appt.patientName}</Typography>
-                        <Typography variant="caption" color="text.secondary" dir="ltr">{appt.patientPhone}</Typography>
-                      </Box>
-                      <Chip label={appt.time || appt.timeSlot} size="small" color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
-                    </Box>
+                    <div key={appt.id} className="flex items-center gap-3 rounded-lg border border-gray-100 bg-white px-3 py-2 hover:bg-gray-50 transition">
+                      <span className="w-5 shrink-0 text-center text-xs font-bold text-gray-300">{idx + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-900">{appt.patientName}</p>
+                        <p className="text-xs text-gray-400" dir="ltr">{appt.patientPhone}</p>
+                      </div>
+                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700" dir="ltr">
+                        {appt.time || appt.timeSlot}
+                      </span>
+                    </div>
                   ))}
-                </Stack>
+                </div>
               )
             })()}
-          </Box>
+          </div>
         )}
       </Modal>
-    </Box>
+    </div>
   )
 }
-
-export default CallCenterBookNow

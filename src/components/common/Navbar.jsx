@@ -1,36 +1,31 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import AppBar from '@mui/material/AppBar'
-import Toolbar from '@mui/material/Toolbar'
-import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
-import IconButton from '@mui/material/IconButton'
-import Drawer from '@mui/material/Drawer'
-import List from '@mui/material/List'
-import ListItem from '@mui/material/ListItem'
-import ListItemButton from '@mui/material/ListItemButton'
-import ListItemText from '@mui/material/ListItemText'
-import Divider from '@mui/material/Divider'
-import Box from '@mui/material/Box'
-import Avatar from '@mui/material/Avatar'
-
-import Stack from '@mui/material/Stack'
-import MenuIcon from '@mui/icons-material/Menu'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import {
+  Menu, LogOut, CalendarDays, CalendarCheck, ClipboardList,
+  LayoutDashboard, ChevronDown,
+} from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { Avatar, AvatarFallback } from '../ui/avatar'
+import { Button } from '../ui/button'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '../ui/dropdown-menu'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '../ui/sheet'
+import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
 
 const NAV_LINKS = [
-  { label: 'حجز اليوم',     to: '/callcenter/book-today' },
-  { label: 'حجز موعد',      to: '/callcenter/book' },
-  { label: 'الحجوزات',      to: '/callcenter/appointments' },
-  { label: 'جدول الأطباء',  to: '/callcenter/schedule' },
-  { label: 'إدارة النظام',  to: '/superadmin' },
+  { label: 'حجز اليوم',     to: '/callcenter/book-today',   icon: CalendarDays },
+  { label: 'حجز موعد',      to: '/callcenter/book',          icon: CalendarCheck },
+  { label: 'الحجوزات',      to: '/callcenter/appointments',  icon: ClipboardList },
+  { label: 'جدول الأطباء',  to: '/callcenter/schedule',      icon: CalendarDays },
+  { label: 'إدارة النظام',  to: '/superadmin',               icon: LayoutDashboard },
 ]
 
-const Navbar = () => {
+export default function Navbar() {
   const { currentUser, facilityName, logout } = useAuth()
   const navigate = useNavigate()
-  const [drawerOpen, setDrawerOpen] = useState(false)
+  const location = useLocation()
 
   const handleLogout = async () => {
     try {
@@ -42,104 +37,141 @@ const Navbar = () => {
     }
   }
 
-  const navLinks = currentUser ? NAV_LINKS : [{ label: 'تسجيل الدخول', to: '/login' }]
+  const initials = (currentUser?.displayName || currentUser?.email || '?')
+    .slice(0, 2)
+    .toUpperCase()
 
-  const drawer = (
-    <Box sx={{ width: 260 }} role="presentation" onClick={() => setDrawerOpen(false)}>
-      <Box sx={{ px: 2, py: 2 }}>
-        <Box component="img" src="/logo.png" alt="logo" sx={{ height: 36, objectFit: 'contain', mb: currentUser ? 1.5 : 0 }} />
-        {currentUser && (
-          <Stack direction="row" alignItems="center" spacing={1.5}>
-            <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main', fontWeight: 700 }}>
-              {(currentUser.displayName || currentUser.email || '?')[0].toUpperCase()}
-            </Avatar>
-            <Box>
-              <Typography variant="body2" fontWeight={600} noWrap>
-                {currentUser.displayName || currentUser.email || '—'}
-              </Typography>
-              {facilityName && (
-                <Typography variant="caption" color="primary.main" display="block">{facilityName}</Typography>
-              )}
-            </Box>
-          </Stack>
-        )}
-      </Box>
-      <Divider />
-      <List>
-        {navLinks.map((link) => (
-          <ListItem key={link.to} disablePadding>
-            <ListItemButton component={Link} to={link.to}>
-              <ListItemText primary={link.label} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-
-        {currentUser && (
-          <ListItem disablePadding>
-            <ListItemButton onClick={handleLogout}>
-              <ListItemText primary="تسجيل الخروج" primaryTypographyProps={{ color: 'error' }} />
-            </ListItemButton>
-          </ListItem>
-        )}
-      </List>
-    </Box>
-  )
+  const isActive = (to) =>
+    location.pathname === to || location.pathname.startsWith(to + '/')
 
   return (
-    <>
-      <AppBar position="sticky" color="inherit" elevation={1} sx={{ bgcolor: 'white', zIndex: 1200 }}>
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-          {/* Logo */}
-          <Button component={Link} to={currentUser ? '/callcenter/book-today' : '/login'} sx={{ p: 0.5, minWidth: 0 }}>
-            <Box component="img" src="/logo.png" alt="logo" sx={{ height: 40, objectFit: 'contain' }} />
-          </Button>
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+      <div className="flex h-14 items-center gap-4 px-4 md:px-6">
 
-          {/* Desktop links */}
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
-            {navLinks.map((link) => (
-              <Button key={link.to} component={Link} to={link.to} color="inherit" sx={{ fontWeight: 500 }}>
-                {link.label}
-              </Button>
-            ))}
+        {/* Logo */}
+        <Link to="/callcenter/book-today" className="flex shrink-0 items-center">
+          <img src="/logo.png" alt="logo" className="h-8 object-contain" />
+        </Link>
 
-            {currentUser && (
-              <Stack direction="row" alignItems="center" spacing={1.5}>
-                <Box sx={{ textAlign: 'right' }}>
-                  <Typography variant="caption" fontWeight={600} noWrap display="block" sx={{ maxWidth: 180 }}>
-                    {currentUser.displayName || currentUser.email || '—'}
-                  </Typography>
-                  {facilityName && (
-                    <Typography variant="caption" color="primary.main" noWrap display="block" sx={{ fontSize: '0.68rem', maxWidth: 180 }}>
-                      {facilityName}
-                    </Typography>
-                  )}
-                </Box>
-                <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.main', fontSize: 14, fontWeight: 700 }}>
-                  {(currentUser.displayName || currentUser.email || '?')[0].toUpperCase()}
+        {/* Desktop nav — RTL so links read right-to-left */}
+        <nav className="hidden md:flex items-center gap-1 flex-1" dir="rtl">
+          {NAV_LINKS.map(({ label, to, icon: Icon }) => (
+            <Link
+              key={to}
+              to={to}
+              className={cn(
+                'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                isActive(to)
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Spacer on mobile */}
+        <div className="flex-1 md:hidden" />
+
+        {/* User dropdown */}
+        {currentUser && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-100 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                 </Avatar>
-                <Button onClick={handleLogout} variant="outlined" color="error" size="small">
-                  خروج
-                </Button>
-              </Stack>
-            )}
-          </Box>
+                <div className="hidden md:block text-right leading-tight">
+                  <p className="text-xs font-semibold text-gray-900 max-w-[140px] truncate">
+                    {currentUser.displayName || currentUser.email}
+                  </p>
+                  {facilityName && (
+                    <p className="text-[10px] text-blue-600 max-w-[140px] truncate">{facilityName}</p>
+                  )}
+                </div>
+                <ChevronDown className="hidden md:block h-3.5 w-3.5 text-gray-400" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56" dir="rtl">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-sm font-semibold">{currentUser.displayName || '—'}</p>
+                  <p className="text-xs text-gray-500 truncate">{currentUser.email}</p>
+                  {facilityName && <p className="text-xs text-blue-600">{facilityName}</p>}
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                تسجيل الخروج
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
-          {/* Mobile menu button */}
-          <IconButton
-            sx={{ display: { md: 'none' } }}
-            onClick={() => setDrawerOpen(true)}
-            aria-label="القائمة"
-          >
-            <MenuIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+        {/* Mobile hamburger */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="md:hidden h-8 w-8">
+              <Menu className="h-4 w-4" />
+              <span className="sr-only">القائمة</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-72 p-0" dir="rtl">
+            <SheetHeader className="border-b border-gray-100 px-4 py-4">
+              <div className="flex items-center gap-3">
+                <img src="/logo.png" alt="logo" className="h-8 object-contain" />
+                {currentUser && (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">
+                      {currentUser.displayName || currentUser.email}
+                    </p>
+                    {facilityName && (
+                      <p className="text-xs text-blue-600 truncate">{facilityName}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+              <SheetTitle className="sr-only">القائمة</SheetTitle>
+            </SheetHeader>
 
-      <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        {drawer}
-      </Drawer>
-    </>
+            <nav className="flex flex-col gap-1 p-3">
+              {NAV_LINKS.map(({ label, to, icon: Icon }) => (
+                <SheetClose key={to} asChild>
+                  <Link
+                    to={to}
+                    className={cn(
+                      'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
+                      isActive(to)
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {label}
+                  </Link>
+                </SheetClose>
+              ))}
+            </nav>
+
+            <div className="absolute bottom-0 left-0 right-0 border-t border-gray-100 p-3">
+              <button
+                onClick={handleLogout}
+                className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                تسجيل الخروج
+              </button>
+            </div>
+          </SheetContent>
+        </Sheet>
+
+      </div>
+    </header>
   )
 }
-
-export default Navbar
