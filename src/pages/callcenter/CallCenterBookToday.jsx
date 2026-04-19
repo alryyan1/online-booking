@@ -5,7 +5,7 @@ import { getBookedSlots, createCallCenterAppointment, updateAppointmentStatus } 
 import { sendSMS, sendWhatsApp, sendCancelWhatsApp, buildBookingMessage, buildCancelMessage } from '../../services/notificationService'
 import { getWorkingShifts, getDayName, formatDate, categorizeSlotsByShift } from '../../utils/bookingUtils'
 import { APPOINTMENT_STATUS } from '../../utils/constants'
-import { Search, X, Stethoscope, User, Zap, Sun, Moon, ClipboardList } from 'lucide-react'
+import { Search, X, Stethoscope, User, Zap, Sun, Moon } from 'lucide-react'
 import Spinner from '../../components/common/Spinner'
 import Modal from '../../components/common/Modal'
 import { cn } from '../../lib/utils'
@@ -69,10 +69,10 @@ const CallCenterBookToday = () => {
     } catch (err) { console.error(err) }
   }
 
-  const handleOpenPatientList = async (doctor) => {
+  const handleOpenPatientList = async (doctor, tab = 'morning') => {
     setListDoctor(doctor)
     setListAppointments([])
-    setListTab('morning')
+    setListTab(tab)
     setShowPatientList(true)
     setLoadingList(true)
     try {
@@ -184,16 +184,20 @@ const CallCenterBookToday = () => {
     return (
       <td className="px-3 py-2 text-center whitespace-nowrap">
         <div className="flex items-center justify-center gap-1.5">
-          <span className={cn(
-            'inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold tabular-nums',
-            isFull
-              ? 'border-red-200 bg-red-50 text-red-600'
-              : hasCounts
-                ? 'border-green-200 bg-green-50 text-green-700'
-                : 'border-gray-200 bg-gray-50 text-gray-400'
-          )}>
+          <button
+            onClick={() => handleOpenPatientList(doc, shift.type)}
+            title="عرض الكشف"
+            className={cn(
+              'inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold tabular-nums transition hover:opacity-80 cursor-pointer',
+              isFull
+                ? 'border-red-200 bg-red-50 text-red-600'
+                : hasCounts
+                  ? 'border-green-200 bg-green-50 text-green-700'
+                  : 'border-gray-200 bg-gray-50 text-gray-400'
+            )}
+          >
             {hasCounts ? `${booked}/${limit}` : '—'}
-          </span>
+          </button>
           <button
             disabled={isFull}
             onMouseEnter={() => fetchDoctorCounts(doc)}
@@ -262,7 +266,6 @@ const CallCenterBookToday = () => {
                 <tr className="border-b border-gray-100 bg-gray-50 text-xs font-semibold text-gray-500">
                   <th className="px-3 py-2.5 text-right">التخصص</th>
                   <th className="px-3 py-2.5 text-right">الطبيب</th>
-                  <th className="px-3 py-2.5 text-center">الكشف</th>
                   <th className="px-3 py-2.5 text-center">
                     <span className="flex items-center justify-center gap-1">
                       <Sun className="h-3.5 w-3.5 text-amber-400" /> صباحاً
@@ -301,16 +304,6 @@ const CallCenterBookToday = () => {
                               )}
                             </div>
                           </div>
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <button
-                            onClick={() => handleOpenPatientList(doc)}
-                            title="عرض كشف المرضى"
-                            className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600 hover:bg-gray-100 transition"
-                          >
-                            <ClipboardList className="h-3.5 w-3.5" />
-                            كشف
-                          </button>
                         </td>
                         <ShiftCell doc={doc} spec={spec} shift={morningShift} />
                         <ShiftCell doc={doc} spec={spec} shift={eveningShift} />
