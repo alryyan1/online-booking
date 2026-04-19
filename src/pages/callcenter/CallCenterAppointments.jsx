@@ -1,99 +1,84 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
+import { db } from '../../services/firebase'
 import { useAuth } from '../../contexts/AuthContext'
-import { getAppointmentsPaginated, updateAppointmentStatus } from '../../services/appointmentService'
+import { updateAppointmentStatus } from '../../services/appointmentService'
 import { sendSMS, sendCancelWhatsApp, buildCancelMessage } from '../../services/notificationService'
 import { formatDate } from '../../utils/bookingUtils'
-import { APPOINTMENT_STATUS } from '../../utils/constants'
-import Box from '@mui/material/Box'
-import Card from '@mui/material/Card'
-import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
-import TextField from '@mui/material/TextField'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableContainer from '@mui/material/TableContainer'
-import TableHead from '@mui/material/TableHead'
-import TableRow from '@mui/material/TableRow'
-import Chip from '@mui/material/Chip'
-import Stack from '@mui/material/Stack'
-import InputAdornment from '@mui/material/InputAdornment'
-import IconButton from '@mui/material/IconButton'
-import Divider from '@mui/material/Divider'
-import Tooltip from '@mui/material/Tooltip'
-import PersonIcon from '@mui/icons-material/Person'
-import MedicalServicesIcon from '@mui/icons-material/MedicalServices'
-import EventIcon from '@mui/icons-material/Event'
-import WbSunnyIcon from '@mui/icons-material/WbSunny'
-import NightsStayIcon from '@mui/icons-material/NightsStay'
-import BlockIcon from '@mui/icons-material/Block'
-import ClearIcon from '@mui/icons-material/Clear'
+import { APPOINTMENT_STATUS, COLLECTIONS } from '../../utils/constants'
+import { Sun, Moon, Ban, Search, X, CalendarDays, Phone, Stethoscope } from 'lucide-react'
 import Spinner from '../../components/common/Spinner'
 import toast from 'react-hot-toast'
+import { cn } from '../../lib/utils'
 
 const rtf = new Intl.RelativeTimeFormat('ar', { numeric: 'auto' })
-
 const timeAgo = (date) => {
   const secs = Math.round((date - Date.now()) / 1000)
   const abs = Math.abs(secs)
-  if (abs < 60)   return rtf.format(Math.round(secs), 'second')
-  if (abs < 3600) return rtf.format(Math.round(secs / 60), 'minute')
+  if (abs < 60)    return rtf.format(Math.round(secs), 'second')
+  if (abs < 3600)  return rtf.format(Math.round(secs / 60), 'minute')
   if (abs < 86400) return rtf.format(Math.round(secs / 3600), 'hour')
   return rtf.format(Math.round(secs / 86400), 'day')
 }
 
-const PeriodChip = ({ period }) => {
-  if (period === 'morning')
-    return <Chip size="small" icon={<WbSunnyIcon sx={{ fontSize: '0.85rem !important' }} />} label="صباحاً" color="warning" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
-  if (period === 'evening')
-    return <Chip size="small" icon={<NightsStayIcon sx={{ fontSize: '0.85rem !important' }} />} label="مساءً" color="secondary" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
-  return <Typography variant="caption" color="text.disabled">—</Typography>
+const STATUS_MAP = {
+  [APPOINTMENT_STATUS.PENDING]:   { label: 'قيد الانتظار', cls: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+  [APPOINTMENT_STATUS.CONFIRMED]: { label: 'مؤكد',         cls: 'bg-green-100 text-green-700 border-green-200' },
+  [APPOINTMENT_STATUS.CANCELED]:  { label: 'ملغي',         cls: 'bg-red-100 text-red-700 border-red-200' },
+  [APPOINTMENT_STATUS.COMPLETED]: { label: 'مكتمل',        cls: 'bg-blue-100 text-blue-700 border-blue-200' },
 }
 
-const CallCenterAppointments = () => {
+const REALTIME_LIMIT = 150
+
+export default function CallCenterAppointments() {
   const { facilityId } = useAuth()
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [lastDoc, setLastDoc] = useState(null)
-  const [hasMore, setHasMore] = useState(false)
   const [cancelingId, setCancelingId] = useState(null)
   const [activeTab, setActiveTab] = useState('today')
   const [patientSearch, setPatientSearch] = useState('')
   const [doctorSearch, setDoctorSearch] = useState('')
   const [dateFilter, setDateFilter] = useState('')
   const [periodFilter, setPeriodFilter] = useState('all')
+  const initializedRef = useRef(false)
 
   const todayStr = formatDate(new Date())
 
   useEffect(() => {
     if (!facilityId) { setLoading(false); return }
-    setLoading(true)
-    getAppointmentsPaginated(facilityId)
-      .then(({ appointments: data, lastDoc: cursor, hasMore: more }) => {
-        setAppointments(data)
-        setLastDoc(cursor)
-        setHasMore(more)
-      })
-      .catch((err) => { console.error(err); toast.error('حدث خطأ أثناء تحميل المواعيد') })
-      .finally(() => setLoading(false))
-  }, [facilityId])
 
-  const handleLoadMore = async () => {
-    if (!hasMore || loadingMore) return
-    setLoadingMore(true)
-    try {
-      const { appointments: more, lastDoc: cursor, hasMore: stillMore } = await getAppointmentsPaginated(facilityId, lastDoc)
-      setAppointments((prev) => [...prev, ...more])
-      setLastDoc(cursor)
-      setHasMore(stillMore)
-    } catch (err) {
+    const q = query(
+      collection(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.APPOINTMENTS),
+      orderBy('createdAt', 'desc'),
+      limit(REALTIME_LIMIT)
+    )
+
+    const unsub = onSnapshot(q, (snap) => {
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+
+      if (!initializedRef.current) {
+        initializedRef.current = true
+        setAppointments(docs)
+        setLoading(false)
+        return
+      }
+
+      setAppointments((prev) => {
+        const prevIds = new Set(prev.map((a) => a.id))
+        const added = docs.filter((d) => !prevIds.has(d.id))
+        if (added.length > 0) {
+          toast.success(added.length === 1 ? 'حجز جديد وصل' : `${added.length} حجوزات جديدة`, { icon: '📅' })
+        }
+        return docs
+      })
+    }, (err) => {
       console.error(err)
-      toast.error('حدث خطأ أثناء تحميل المزيد')
-    } finally {
-      setLoadingMore(false)
-    }
-  }
+      toast.error('حدث خطأ في الاتصال')
+      setLoading(false)
+    })
+
+    return unsub
+  }, [facilityId])
 
   const handleCancel = async (id) => {
     if (!window.confirm('هل أنت متأكد من إلغاء هذا الحجز؟')) return
@@ -101,28 +86,23 @@ const CallCenterAppointments = () => {
     setCancelingId(id)
     try {
       await updateAppointmentStatus(facilityId, id, APPOINTMENT_STATUS.CANCELED)
-      setAppointments((prev) => prev.map((a) => a.id === id ? { ...a, status: APPOINTMENT_STATUS.CANCELED } : a))
       toast.success('تم إلغاء الحجز')
       if (aptData) {
-        const phone = aptData.patientPhone
-        const date = aptData.date
-        const period = aptData.period
-        
         Promise.all([
-          sendSMS(phone, buildCancelMessage({ 
-            patientName: aptData.patientName, 
-            doctorName: aptData.doctorName, 
-            date, 
-            shift: period 
+          sendSMS(aptData.patientPhone, buildCancelMessage({
+            patientName: aptData.patientName,
+            doctorName: aptData.doctorName,
+            date: aptData.date,
+            shift: aptData.period,
           })),
-          sendCancelWhatsApp({ 
-            phone, 
-            patientName: aptData.patientName, 
-            doctorName: aptData.doctorName, 
-            date, 
-            shift: period 
-          })
-        ]).catch(err => console.error("Cancellation Notification Error:", err))
+          sendCancelWhatsApp({
+            phone: aptData.patientPhone,
+            patientName: aptData.patientName,
+            doctorName: aptData.doctorName,
+            date: aptData.date,
+            shift: aptData.period,
+          }),
+        ]).catch((err) => console.error('Cancellation notification error:', err))
       }
     } catch (err) {
       console.error(err)
@@ -154,241 +134,239 @@ const CallCenterAppointments = () => {
   if (loading) return <Spinner size="lg" />
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 2, md: 3 }, py: 3 }}>
+    <div className="max-w-6xl mx-auto px-3 py-4" dir="rtl">
 
       {/* Header */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2.5 }}>
-        <Box>
-          <Typography variant="h6" fontWeight={700} lineHeight={1.2}>إدارة المواعيد</Typography>
-          <Typography variant="caption" color="text.secondary">تتبع وإدارة المواعيد المسجلة</Typography>
-        </Box>
-        <Stack direction="row" spacing={1}>
-          <Chip size="small" label={`اليوم: ${todayCount}`} color="primary" variant="outlined" sx={{ fontWeight: 600 }} />
-          <Chip size="small" label={`الإجمالي: ${appointments.length}`} variant="outlined" sx={{ fontWeight: 600 }} />
-        </Stack>
-      </Stack>
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h1 className="text-base font-bold text-gray-900 leading-tight">إدارة المواعيد</h1>
+          <p className="text-xs text-gray-500">تتبع وإدارة المواعيد المسجلة • تحديث فوري</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+            اليوم: {todayCount}
+          </span>
+          <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
+            الإجمالي: {appointments.length}
+          </span>
+          <span className="flex items-center gap-1 text-[10px] text-green-600 font-medium">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+            مباشر
+          </span>
+        </div>
+      </div>
 
       {/* Filter bar */}
-      <Card variant="outlined" sx={{ mb: 2, borderRadius: 2 }}>
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          spacing={1}
-          alignItems={{ md: 'center' }}
-          flexWrap="wrap"
-          sx={{ p: 1.5 }}
-        >
-          {/* Today / All toggle */}
-          <Stack direction="row" spacing={0.5} sx={{ bgcolor: 'grey.100', p: 0.4, borderRadius: 1.5, flexShrink: 0 }}>
-            {[
-              { key: 'today', label: 'اليوم' },
-              { key: 'all', label: 'الكل' },
-            ].map((t) => (
-              <Button
-                key={t.key}
-                size="small"
-                variant={activeTab === t.key ? 'contained' : 'text'}
-                disableElevation
-                onClick={() => { setActiveTab(t.key); if (t.key === 'today') setDateFilter('') }}
-                sx={{ px: 2, py: 0.4, minWidth: 64, borderRadius: 1.2, fontSize: '0.78rem', color: activeTab === t.key ? undefined : 'text.secondary' }}
-              >
-                {t.label}
-              </Button>
-            ))}
-          </Stack>
+      <div className="mb-3 rounded-lg border border-gray-200 bg-white p-2.5 flex flex-wrap items-center gap-2">
 
-          <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'flex' } }} />
+        {/* Today / All toggle */}
+        <div className="flex items-center bg-gray-100 rounded-lg p-0.5 shrink-0">
+          {[{ key: 'today', label: 'اليوم' }, { key: 'all', label: 'الكل' }].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => { setActiveTab(t.key); if (t.key === 'today') setDateFilter('') }}
+              className={cn(
+                'px-3 py-1 rounded-md text-xs font-medium transition-colors',
+                activeTab === t.key ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-          <TextField
-            size="small"
-            placeholder="المريض أو الهاتف..."
+        <div className="w-px h-5 bg-gray-200 hidden md:block" />
+
+        {/* Patient search */}
+        <div className="relative flex-1 min-w-36">
+          <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+          <input
             value={patientSearch}
             onChange={(e) => setPatientSearch(e.target.value)}
-            InputProps={{ startAdornment: <InputAdornment position="start"><PersonIcon sx={{ fontSize: 15, color: 'text.disabled' }} /></InputAdornment> }}
-            sx={{ flex: 1, minWidth: 150, '& .MuiInputBase-root': { fontSize: '0.82rem' } }}
+            placeholder="المريض أو الهاتف..."
+            className="w-full rounded-md border border-gray-200 bg-gray-50 pr-7 pl-2.5 py-1.5 text-xs outline-none focus:border-blue-400 focus:bg-white"
           />
-          <TextField
-            size="small"
-            placeholder="الطبيب أو التخصص..."
+        </div>
+
+        {/* Doctor search */}
+        <div className="relative flex-1 min-w-36">
+          <Stethoscope className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+          <input
             value={doctorSearch}
             onChange={(e) => setDoctorSearch(e.target.value)}
-            InputProps={{ startAdornment: <InputAdornment position="start"><MedicalServicesIcon sx={{ fontSize: 15, color: 'text.disabled' }} /></InputAdornment> }}
-            sx={{ flex: 1, minWidth: 150, '& .MuiInputBase-root': { fontSize: '0.82rem' } }}
+            placeholder="الطبيب أو التخصص..."
+            className="w-full rounded-md border border-gray-200 bg-gray-50 pr-7 pl-2.5 py-1.5 text-xs outline-none focus:border-blue-400 focus:bg-white"
           />
+        </div>
 
-          {/* Period filter */}
-          <Stack direction="row" spacing={0.5} sx={{ bgcolor: 'grey.100', p: 0.4, borderRadius: 1.5, flexShrink: 0 }}>
-            {[
-              { key: 'all', label: 'الكل', color: 'primary' },
-              { key: 'morning', label: 'ص', icon: <WbSunnyIcon sx={{ fontSize: 13 }} />, color: 'warning' },
-              { key: 'evening', label: 'م', icon: <NightsStayIcon sx={{ fontSize: 13 }} />, color: 'secondary' },
-            ].map((p) => (
-              <Button
-                key={p.key}
-                size="small"
-                variant={periodFilter === p.key ? 'contained' : 'text'}
-                disableElevation
-                startIcon={p.icon}
-                color={p.color}
-                onClick={() => setPeriodFilter(p.key)}
-                sx={{ px: 1.5, py: 0.4, minWidth: 0, borderRadius: 1.2, fontSize: '0.75rem', color: periodFilter === p.key ? undefined : 'text.secondary' }}
-              >
-                {p.label}
-              </Button>
-            ))}
-          </Stack>
+        {/* Period filter */}
+        <div className="flex items-center bg-gray-100 rounded-lg p-0.5 shrink-0">
+          {[
+            { key: 'all', label: 'الكل', icon: null },
+            { key: 'morning', label: 'ص', icon: <Sun className="h-3 w-3" /> },
+            { key: 'evening', label: 'م', icon: <Moon className="h-3 w-3" /> },
+          ].map((p) => (
+            <button
+              key={p.key}
+              onClick={() => setPeriodFilter(p.key)}
+              className={cn(
+                'flex items-center gap-0.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
+                periodFilter === p.key ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              )}
+            >
+              {p.icon}{p.label}
+            </button>
+          ))}
+        </div>
 
-          <TextField
-            type="date"
-            size="small"
-            value={dateFilter}
-            onChange={(e) => { setDateFilter(e.target.value); if (e.target.value) setActiveTab('all') }}
-            sx={{ width: 145, '& .MuiInputBase-root': { fontSize: '0.82rem' } }}
-            inputProps={{ dir: 'ltr' }}
-          />
+        {/* Date picker */}
+        <input
+          type="date"
+          value={dateFilter}
+          onChange={(e) => { setDateFilter(e.target.value); if (e.target.value) setActiveTab('all') }}
+          className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs outline-none focus:border-blue-400 focus:bg-white w-36"
+          dir="ltr"
+        />
 
-          {hasFilters && (
-            <Tooltip title="مسح الفلاتر">
-              <IconButton size="small" color="error" onClick={clearFilters}>
-                <ClearIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Stack>
         {hasFilters && (
-          <Box sx={{ px: 2, pb: 1 }}>
-            <Typography variant="caption" color="text.secondary">{filtered.length} نتيجة</Typography>
-          </Box>
+          <button onClick={clearFilters} className="text-red-500 hover:text-red-700 transition-colors">
+            <X className="h-3.5 w-3.5" />
+          </button>
         )}
-      </Card>
+      </div>
+
+      {hasFilters && (
+        <p className="text-[11px] text-gray-400 mb-2 px-1">{filtered.length} نتيجة</p>
+      )}
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <Card sx={{ textAlign: 'center', py: 8 }}>
-          <EventIcon sx={{ fontSize: 48, color: 'grey.300', mb: 1.5 }} />
-          <Typography variant="body2" color="text.secondary">لا توجد مواعيد تطابق بحثك</Typography>
-          {hasFilters && <Button onClick={clearFilters} size="small" sx={{ mt: 1 }}>عرض الكل</Button>}
-        </Card>
+        <div className="rounded-lg border border-gray-200 bg-white py-16 text-center">
+          <CalendarDays className="h-10 w-10 text-gray-200 mx-auto mb-2" />
+          <p className="text-sm text-gray-400">لا توجد مواعيد تطابق بحثك</p>
+          {hasFilters && (
+            <button onClick={clearFilters} className="mt-2 text-xs text-blue-500 hover:underline">عرض الكل</button>
+          )}
+        </div>
       ) : (
-        <Card sx={{ overflow: 'hidden' }}>
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ bgcolor: 'grey.50' }}>
-                  <TableCell sx={{ py: 1.2, fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', width: 36 }}>#</TableCell>
-                  <TableCell sx={{ py: 1.2, fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary' }}>المريض</TableCell>
-                  <TableCell sx={{ py: 1.2, fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', display: { xs: 'none', sm: 'table-cell' } }}>الطبيب / التخصص</TableCell>
-                  <TableCell sx={{ py: 1.2, fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', display: { xs: 'none', md: 'table-cell' } }}>التاريخ</TableCell>
-                  <TableCell sx={{ py: 1.2, fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', display: { xs: 'none', md: 'table-cell' } }}>الفترة</TableCell>
-                  <TableCell sx={{ py: 1.2, fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary', display: { xs: 'none', lg: 'table-cell' } }}>وقت التسجيل</TableCell>
-                  <TableCell sx={{ py: 1.2, fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary' }} align="center">الحالة</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="py-2 px-3 text-right text-[11px] font-semibold text-gray-500 w-8">#</th>
+                  <th className="py-2 px-3 text-right text-[11px] font-semibold text-gray-500">المريض</th>
+                  <th className="py-2 px-3 text-right text-[11px] font-semibold text-gray-500 hidden sm:table-cell">الطبيب / التخصص</th>
+                  <th className="py-2 px-3 text-right text-[11px] font-semibold text-gray-500 hidden md:table-cell">التاريخ</th>
+                  <th className="py-2 px-3 text-right text-[11px] font-semibold text-gray-500 hidden md:table-cell">الفترة</th>
+                  <th className="py-2 px-3 text-right text-[11px] font-semibold text-gray-500 hidden lg:table-cell">وقت التسجيل</th>
+                  <th className="py-2 px-3 text-center text-[11px] font-semibold text-gray-500">الحالة</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
                 {filtered.map((apt, idx) => {
                   const isCanceled = apt.status === APPOINTMENT_STATUS.CANCELED
                   const isToday = apt.date === todayStr
+                  const st = STATUS_MAP[apt.status] ?? { label: apt.status, cls: 'bg-gray-100 text-gray-600 border-gray-200' }
                   return (
-                    <TableRow
+                    <tr
                       key={apt.id}
-                      hover
-                      sx={{ opacity: isCanceled ? 0.5 : 1, '& td': { py: 0.8, borderBottom: '1px solid', borderColor: 'grey.100' } }}
+                      className={cn('hover:bg-gray-50 transition-colors', isCanceled && 'opacity-50')}
                     >
-                      <TableCell>
-                        <Typography variant="caption" color="text.disabled" fontWeight={600}>{idx + 1}</Typography>
-                      </TableCell>
+                      <td className="py-2 px-3">
+                        <span className="text-[11px] text-gray-400 font-semibold">{idx + 1}</span>
+                      </td>
 
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={800} noWrap sx={{ fontSize: '0.95rem' }}>{apt.patientName || '—'}</Typography>
-                        <Typography variant="caption" color="primary.main" dir="ltr" display="block" sx={{ fontSize: '0.72rem' }}>{apt.patientPhone || ''}</Typography>
-                      </TableCell>
+                      <td className="py-2 px-3">
+                        <p className="text-sm font-bold text-gray-900 leading-tight">{apt.patientName || '—'}</p>
+                        {apt.patientPhone && (
+                          <p className="text-[11px] text-blue-600 mt-0.5 flex items-center gap-0.5" dir="ltr">
+                            <Phone className="h-2.5 w-2.5" />{apt.patientPhone}
+                          </p>
+                        )}
+                      </td>
 
-                      <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
-                        <Typography variant="body2" fontWeight={600} noWrap sx={{ fontSize: '0.82rem' }}>{apt.doctorName || '—'}</Typography>
-                        <Typography variant="caption" color="text.secondary" noWrap display="block" sx={{ fontSize: '0.72rem' }}>{apt.specializationName || ''}</Typography>
-                      </TableCell>
+                      <td className="py-2 px-3 hidden sm:table-cell">
+                        <p className="text-xs font-semibold text-gray-800 leading-tight">{apt.doctorName || '—'}</p>
+                        <p className="text-[11px] text-gray-400">{apt.specializationName || ''}</p>
+                      </td>
 
-                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                        <Chip
-                          size="small"
-                          label={apt.date || '—'}
-                          color={isToday ? 'primary' : 'default'}
-                          variant={isToday ? 'filled' : 'outlined'}
-                          sx={{ height: 20, fontSize: '0.68rem', fontWeight: 600 }}
-                        />
-                      </TableCell>
+                      <td className="py-2 px-3 hidden md:table-cell">
+                        <span className={cn(
+                          'inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold border',
+                          isToday
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : 'bg-gray-50 text-gray-600 border-gray-200'
+                        )}>
+                          {apt.date || '—'}
+                        </span>
+                      </td>
 
-                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                        <Stack spacing={0.3}>
-                          <PeriodChip period={apt.period} />
-                    
-                        </Stack>
-                      </TableCell>
+                      <td className="py-2 px-3 hidden md:table-cell">
+                        {apt.period === 'morning' && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                            <Sun className="h-3 w-3" />صباحاً
+                          </span>
+                        )}
+                        {apt.period === 'evening' && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 text-[11px] font-medium text-purple-700">
+                            <Moon className="h-3 w-3" />مساءً
+                          </span>
+                        )}
+                        {!apt.period && <span className="text-gray-300 text-xs">—</span>}
+                      </td>
 
-                      <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                      <td className="py-2 px-3 hidden lg:table-cell">
                         {apt.createdAt ? (() => {
                           const d = apt.createdAt.toDate ? apt.createdAt.toDate() : new Date(apt.createdAt)
                           return (
-                            <Stack spacing={0}>
-                              <Typography variant="caption" fontWeight={600} sx={{ fontSize: '0.72rem' }} dir="ltr">
-                                {d.toLocaleDateString('ar-EG')}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem' }} dir="ltr">
-                                {d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
-                              </Typography>
-                              <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
-                                {timeAgo(d)}
-                              </Typography>
-                            </Stack>
+                            <div dir="ltr">
+                              <p className="text-[11px] font-semibold text-gray-700">{d.toLocaleDateString('ar-EG')}</p>
+                              <p className="text-[10px] text-gray-500">{d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
+                              <p className="text-[10px] text-gray-400">{timeAgo(d)}</p>
+                            </div>
                           )
-                        })() : <Typography variant="caption" color="text.disabled">—</Typography>}
-                      </TableCell>
+                        })() : <span className="text-gray-300 text-xs">—</span>}
+                      </td>
 
-                      <TableCell align="center">
+                      <td className="py-2 px-3 text-center">
                         {isCanceled ? (
-                          <Chip
-                            size="small"
-                            icon={<BlockIcon sx={{ fontSize: '0.75rem !important' }} />}
-                            label="ملغي"
-                            color="error"
-                            variant="outlined"
-                            sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }}
-                          />
+                          <span className={cn('inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold', st.cls)}>
+                            {st.label}
+                          </span>
                         ) : (
-                          <Tooltip title="إلغاء الحجز">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleCancel(apt.id)}
-                              disabled={cancelingId === apt.id}
-                              sx={{ width: 26, height: 26, border: '1px solid', borderColor: 'error.light', borderRadius: 1.2 }}
-                            >
-                              <BlockIcon sx={{ fontSize: 14 }} />
-                            </IconButton>
-                          </Tooltip>
+                          <button
+                            onClick={() => handleCancel(apt.id)}
+                            disabled={cancelingId === apt.id}
+                            title="إلغاء الحجز"
+                            className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-100 transition-colors disabled:opacity-40"
+                          >
+                            <Ban className="h-3 w-3" />
+                            {cancelingId === apt.id ? '...' : 'إلغاء'}
+                          </button>
                         )}
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   )
                 })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <Box sx={{ px: 2, py: 1, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="caption" color="text.secondary">
-              {'محمّل: '}
-              <Box component="span" fontWeight={700} color="text.primary">{appointments.length}</Box>
-              {' موعد'}
-            </Typography>
-            {hasMore && (
-              <Button size="small" variant="outlined" onClick={handleLoadMore} disabled={loadingMore} sx={{ fontSize: '0.75rem', py: 0.4 }}>
-                {loadingMore ? 'جاري التحميل...' : 'تحميل المزيد'}
-              </Button>
-            )}
-          </Box>
-        </Card>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50 px-3 py-1.5">
+            <span className="text-[11px] text-gray-500">
+              محمّل: <strong className="text-gray-800">{appointments.length}</strong> موعد
+              {appointments.length >= REALTIME_LIMIT && (
+                <span className="text-gray-400"> (آخر {REALTIME_LIMIT})</span>
+              )}
+            </span>
+            <span className="flex items-center gap-1 text-[10px] text-green-600 font-medium">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+              تحديث تلقائي
+            </span>
+          </div>
+        </div>
       )}
-    </Box>
+    </div>
   )
 }
-
-export default CallCenterAppointments
