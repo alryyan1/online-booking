@@ -320,11 +320,7 @@ const CallCenterAppointments = () => {
                       <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                         <Stack spacing={0.3}>
                           <PeriodChip period={apt.period} />
-                          {(apt.time || apt.timeSlot) && (
-                            <Typography variant="caption" color="text.secondary" dir="ltr" sx={{ fontSize: '0.68rem' }}>
-                              {apt.time || apt.timeSlot}
-                            </Typography>
-                          )}
+                    
                         </Stack>
                       </TableCell>
 
