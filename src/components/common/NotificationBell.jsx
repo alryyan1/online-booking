@@ -23,6 +23,23 @@ function timeAgo(ts) {
   return `منذ ${Math.floor(hr / 24)} يوم`
 }
 
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission()
+  }
+}
+
+function showWindowsNotification(appointment) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return
+  const title = 'حجز جديد'
+  const body = [
+    appointment.patientName || appointment.userName || 'مريض',
+    appointment.doctorName || appointment.specName,
+  ].filter(Boolean).join(' — ')
+  const n = new Notification(title, { body, icon: '/logo.png', dir: 'rtl' })
+  setTimeout(() => n.close(), 6000)
+}
+
 // Tiny programmatic chime — no audio file needed
 function playChime() {
   try {
@@ -54,6 +71,8 @@ export default function NotificationBell({ facilityId }) {
   const initializedRef = useRef(false)
   const knownIdsRef = useRef(new Set())
 
+  useEffect(() => { requestNotificationPermission() }, [])
+
   useEffect(() => {
     if (!facilityId) return
     const q = query(
@@ -78,6 +97,7 @@ export default function NotificationBell({ facilityId }) {
       if (newOnes.length > 0) {
         newOnes.forEach((d) => knownIdsRef.current.add(d.id))
         playChime()
+        newOnes.forEach(showWindowsNotification)
         setUnread((n) => n + newOnes.length)
       }
 
