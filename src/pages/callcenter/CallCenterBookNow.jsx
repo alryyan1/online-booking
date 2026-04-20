@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
+import { db } from '../../services/firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { getSpecializations, getDoctorsBySpec } from '../../services/facilityService'
 import { getBookedSlots, createCallCenterAppointment } from '../../services/appointmentService'
 import { getAvailableBookingDays, categorizeSlotsByShift } from '../../utils/bookingUtils'
-import { APPOINTMENT_STATUS } from '../../utils/constants'
+import { APPOINTMENT_STATUS, COLLECTIONS } from '../../utils/constants'
 import { Search, X, Stethoscope, User, CalendarDays, Sun, Moon, Phone } from 'lucide-react'
 
 const rtf = new Intl.RelativeTimeFormat('ar', { numeric: 'auto' })
@@ -42,6 +44,9 @@ export default function CallCenterBookNow() {
 
   const [bookedCounts, setBookedCounts] = useState({})
   const [loadingCounts, setLoadingCounts] = useState(false)
+  const knownAptIdsRef = useRef(new Set())
+  const specialtiesRef = useRef([])
+  const docSelectedDatesRef = useRef({})
 
   const [showPatientList, setShowPatientList] = useState(false)
   const [listDoctor, setListDoctor] = useState(null)
@@ -83,6 +88,10 @@ export default function CallCenterBookNow() {
     setLoading(false)
   }
 
+  // Keep refs in sync for use inside snapshot callback (avoids stale closures)
+  useEffect(() => { specialtiesRef.current = specialties }, [specialties])
+  useEffect(() => { docSelectedDatesRef.current = docSelectedDates }, [docSelectedDates])
+
   useEffect(() => { loadData() }, [facilityId])
 
   const fetchCounts = async (doctor, day) => {
@@ -96,6 +105,50 @@ export default function CallCenterBookNow() {
     } catch (err) { console.error(err) }
     setLoadingCounts(false)
   }
+
+  const refreshCounts = async (doctor, day) => {
+    if (!doctor || !day) return
+    try {
+      const slots = await getBookedSlots(facilityId, doctor.id, day.date)
+      const counts = categorizeSlotsByShift(slots, doctor.workingSchedule?.[day.dayName])
+      setBookedCounts((prev) => ({ ...prev, [`${doctor.id}_${day.date}`]: counts }))
+    } catch (err) { console.error(err) }
+  }
+
+  // Realtime listener — updates counts when a new appointment is saved
+  useEffect(() => {
+    if (!facilityId) return
+    const q = query(
+      collection(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.APPOINTMENTS),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    )
+    const unsub = onSnapshot(q, (snap) => {
+      const newOnes = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((d) => !knownAptIdsRef.current.has(d.id))
+
+      if (newOnes.length === 0) {
+        // seed on first load
+        snap.docs.forEach((d) => knownAptIdsRef.current.add(d.id))
+        return
+      }
+
+      newOnes.forEach((apt) => {
+        knownAptIdsRef.current.add(apt.id)
+        // Find the doctor in the current specialties list
+        const allDocs = specialtiesRef.current.flatMap((s) => s.doctors)
+        const doctor = allDocs.find((d) => d.id === apt.doctorId)
+        if (!doctor) return
+        const day = docSelectedDatesRef.current[doctor.id]
+        if (day && day.date === apt.date) {
+          refreshCounts(doctor, day)
+          toast.success(`حجز جديد — ${apt.patientName || ''}`, { icon: '📅' })
+        }
+      })
+    })
+    return unsub
+  }, [facilityId])
 
   const handleOpenPatientList = async (doctor, tab = 'morning') => {
     const activeDay = docSelectedDates[doctor.id]
