@@ -385,7 +385,7 @@ export default function CallCenterBookNow() {
       )}
 
       {/* ── Booking Form Modal ── */}
-      <Modal isOpen={showFormModal} onClose={() => setShowFormModal(false)} title={`حجز موعد — د. ${selectedDoctor?.docName}`} size="sm">
+      <Modal isOpen={showFormModal} onClose={() => setShowFormModal(false)} title={`حجز موعد — د. ${selectedDoctor?.docName}`} size="2xl">
         <div className="mb-4 flex items-center justify-between rounded-lg bg-blue-50 px-4 py-3">
           <div>
             <p className="text-[11px] font-bold text-blue-700 mb-0.5">الموعد المحدد</p>
