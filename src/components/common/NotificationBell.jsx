@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
+import { collection, query, orderBy, limit, onSnapshot, getDoc, doc } from 'firebase/firestore'
 import { db } from '../../services/firebase'
 import { COLLECTIONS } from '../../utils/constants'
 import { Bell } from 'lucide-react'
@@ -29,15 +29,28 @@ function requestNotificationPermission() {
   }
 }
 
-function showWindowsNotification(appointment) {
+async function showWindowsNotification(appointment, facilityId) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
-  const title = 'حجز جديد'
-  const body = [
-    appointment.patientName || appointment.userName || 'مريض',
-    appointment.doctorName || appointment.specName,
-  ].filter(Boolean).join(' — ')
-  const n = new Notification(title, { body, icon: '/logo.png', dir: 'rtl' })
-  setTimeout(() => n.close(), 6000)
+  const patient = appointment.patientName || appointment.userName || 'مريض'
+  const doctor  = appointment.doctorName || appointment.specName || ''
+
+  // Try to resolve doctor photo from Firestore
+  let icon = '/logo.png'
+  try {
+    const specId = appointment.centralSpecialtyId || appointment.specializationId
+    const doctorId = appointment.doctorId
+    if (facilityId && specId && doctorId) {
+      const snap = await getDoc(
+        doc(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.SPECIALIZATIONS, specId, COLLECTIONS.DOCTORS, doctorId)
+      )
+      if (snap.exists()) icon = snap.data().photoUrl || '/logo.png'
+    }
+  } catch { /* fall back to logo */ }
+
+  const title = `حجز جديد — ${patient}`
+  const body  = doctor ? `الطبيب: ${doctor}` : 'موعد جديد'
+  const n = new Notification(title, { body, icon, dir: 'rtl', badge: '/logo.png' })
+  setTimeout(() => n.close(), 8000)
 }
 
 // Tiny programmatic chime — no audio file needed
@@ -97,7 +110,7 @@ export default function NotificationBell({ facilityId }) {
       if (newOnes.length > 0) {
         newOnes.forEach((d) => knownIdsRef.current.add(d.id))
         playChime()
-        newOnes.forEach(showWindowsNotification)
+        newOnes.forEach((apt) => showWindowsNotification(apt, facilityId))
         setUnread((n) => n + newOnes.length)
       }
 
