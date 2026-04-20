@@ -21,6 +21,7 @@ const timeAgo = (ts) => {
 }
 import Spinner from '../../components/common/Spinner'
 import Modal from '../../components/common/Modal'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogClose } from '../../components/ui/dialog'
 import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
 
@@ -385,49 +386,56 @@ export default function CallCenterBookNow() {
       )}
 
       {/* ── Booking Form Modal ── */}
-      <Modal isOpen={showFormModal} onClose={() => setShowFormModal(false)} title={`حجز موعد — د. ${selectedDoctor?.docName}`} size="2xl">
-        <div className="mb-4 flex items-center justify-between rounded-lg bg-blue-50 px-4 py-3">
-          <div>
-            <p className="text-[11px] font-bold text-blue-700 mb-0.5">الموعد المحدد</p>
-            <p className="text-sm font-bold text-gray-900">{selectedDayRender?.dayName}، {selectedDayRender?.date}</p>
-            <p className="text-xs text-blue-600">الفترة: {selectedShift?.label}</p>
-          </div>
-          <span className="text-xl font-bold text-blue-700" dir="ltr">{selectedShift?.start}</span>
-        </div>
-        <form onSubmit={handleConfirmBooking} className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-700">اسم المريض الكامل</label>
-            <input
-              autoFocus required
-              value={patientData.name}
-              onChange={(e) => setPatientData({ ...patientData, name: e.target.value })}
-              placeholder="الاسم الرباعي"
-              className="rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-700">رقم الهاتف</label>
-            <input
-              required type="tel" dir="ltr"
-              value={patientData.phone}
-              onChange={(e) => setPatientData({ ...patientData, phone: e.target.value })}
-              placeholder="09XXXXXXXX"
-              className="rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={() => setShowFormModal(false)}
-              className="rounded-md border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
-              إلغاء
-            </button>
-            <button type="submit" disabled={isBooking}
-              className="flex items-center gap-1.5 rounded-md bg-green-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-green-700 transition disabled:opacity-60">
-              {isBooking && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
-              {isBooking ? 'جاري الحفظ...' : 'تأكيد الحجز'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+      <Dialog open={showFormModal} onOpenChange={(o) => !o && setShowFormModal(false)}>
+        <DialogContent className="max-w-2xl" dir="rtl" onClose={() => setShowFormModal(false)}>
+          <DialogHeader>
+            <DialogTitle>حجز موعد — د. {selectedDoctor?.docName}</DialogTitle>
+          </DialogHeader>
+          <DialogBody className="max-h-[80vh]">
+            <div className="mb-4 flex items-center justify-between rounded-lg bg-blue-50 px-4 py-3">
+              <div>
+                <p className="text-[11px] font-bold text-blue-700 mb-0.5">الموعد المحدد</p>
+                <p className="text-sm font-bold text-gray-900">{selectedDayRender?.dayName}، {selectedDayRender?.date}</p>
+                <p className="text-xs text-blue-600">الفترة: {selectedShift?.label}</p>
+              </div>
+              <span className="text-xl font-bold text-blue-700" dir="ltr">{selectedShift?.start}</span>
+            </div>
+            <form onSubmit={handleConfirmBooking} className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-700">اسم المريض الكامل</label>
+                <input
+                  autoFocus required
+                  value={patientData.name}
+                  onChange={(e) => setPatientData({ ...patientData, name: e.target.value })}
+                  placeholder="الاسم الرباعي"
+                  className="rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-700">رقم الهاتف</label>
+                <input
+                  required type="tel" dir="ltr"
+                  value={patientData.phone}
+                  onChange={(e) => setPatientData({ ...patientData, phone: e.target.value })}
+                  placeholder="09XXXXXXXX"
+                  className="rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <button type="button" onClick={() => setShowFormModal(false)}
+                  className="rounded-md border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+                  إلغاء
+                </button>
+                <button type="submit" disabled={isBooking}
+                  className="flex items-center gap-1.5 rounded-md bg-green-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-green-700 transition disabled:opacity-60">
+                  {isBooking && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
+                  {isBooking ? 'جاري الحفظ...' : 'تأكيد الحجز'}
+                </button>
+              </div>
+            </form>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Date Picker Modal ── */}
       <Modal isOpen={showDatePickerModal} onClose={() => setShowDatePickerModal(false)} title={`اختيار التاريخ — د. ${doctorForDatePick?.docName}`} size="sm">
