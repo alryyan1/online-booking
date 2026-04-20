@@ -4,7 +4,19 @@ import { getSpecializations, getDoctorsBySpec } from '../../services/facilitySer
 import { getBookedSlots, createCallCenterAppointment } from '../../services/appointmentService'
 import { getAvailableBookingDays, categorizeSlotsByShift } from '../../utils/bookingUtils'
 import { APPOINTMENT_STATUS } from '../../utils/constants'
-import { Search, X, Stethoscope, User, CalendarDays, Sun, Moon } from 'lucide-react'
+import { Search, X, Stethoscope, User, CalendarDays, Sun, Moon, Phone } from 'lucide-react'
+
+const rtf = new Intl.RelativeTimeFormat('ar', { numeric: 'auto' })
+const timeAgo = (ts) => {
+  if (!ts) return '—'
+  const d = ts.toDate ? ts.toDate() : new Date(ts)
+  const secs = Math.round((d - Date.now()) / 1000)
+  const abs = Math.abs(secs)
+  if (abs < 60)    return rtf.format(Math.round(secs), 'second')
+  if (abs < 3600)  return rtf.format(Math.round(secs / 60), 'minute')
+  if (abs < 86400) return rtf.format(Math.round(secs / 3600), 'hour')
+  return rtf.format(Math.round(secs / 86400), 'day')
+}
 import Spinner from '../../components/common/Spinner'
 import Modal from '../../components/common/Modal'
 import { cn } from '../../lib/utils'
@@ -85,11 +97,11 @@ export default function CallCenterBookNow() {
     setLoadingCounts(false)
   }
 
-  const handleOpenPatientList = async (doctor) => {
+  const handleOpenPatientList = async (doctor, tab = 'morning') => {
     const activeDay = docSelectedDates[doctor.id]
     if (!activeDay) { toast.error('يرجى اختيار تاريخ أولاً'); return }
     setListDoctor(doctor); setListDate(activeDay.date)
-    setListAppointments([]); setListTab('morning')
+    setListAppointments([]); setListTab(tab)
     setShowPatientList(true); setLoadingList(true)
     try {
       const slots = await getBookedSlots(facilityId, doctor.id, activeDay.date)
@@ -170,14 +182,18 @@ export default function CallCenterBookNow() {
             <Icon className={cn('h-3 w-3', iconCls)} />
             <span className="text-xs font-bold text-gray-700" dir="ltr">{shift.start}</span>
           </div>
-          <span className={cn(
-            'rounded-full border px-2 py-0.5 text-[10px] font-bold tabular-nums',
-            isFull ? 'border-red-200 bg-red-50 text-red-600'
-              : hasCounts ? 'border-blue-200 bg-blue-50 text-blue-700'
-              : 'border-gray-200 bg-gray-50 text-gray-400'
-          )}>
+          <button
+            onClick={() => handleOpenPatientList(doc, shiftType)}
+            title="عرض الكشف"
+            className={cn(
+              'rounded-full border px-2 py-0.5 text-[10px] font-bold tabular-nums transition hover:opacity-75 cursor-pointer',
+              isFull ? 'border-red-200 bg-red-50 text-red-600'
+                : hasCounts ? 'border-blue-200 bg-blue-50 text-blue-700'
+                : 'border-gray-200 bg-gray-50 text-gray-400'
+            )}
+          >
             {hasCounts ? `${booked}/${limit}` : '—/—'}
-          </span>
+          </button>
           <button
             disabled={isFull || (!hasCounts && loadingCounts)}
             onClick={() => handleShiftSelect(doc, spec, activeDay, shift)}
@@ -394,7 +410,7 @@ export default function CallCenterBookNow() {
       </Modal>
 
       {/* ── Patient List Modal ── */}
-      <Modal isOpen={showPatientList} onClose={() => setShowPatientList(false)} title={`كشف د. ${listDoctor?.docName} — ${listDate}`} size="md">
+      <Modal isOpen={showPatientList} onClose={() => setShowPatientList(false)} title={`كشف د. ${listDoctor?.docName} — ${listDate}`} size="lg">
         {loadingList ? (
           <Spinner size="md" />
         ) : (
@@ -423,19 +439,46 @@ export default function CallCenterBookNow() {
                 <div className="py-10 text-center text-sm text-gray-400">لا يوجد حجوزات لهذه الفترة</div>
               )
               return (
-                <div className="flex flex-col gap-1.5">
-                  {sectionAppts.map((appt, idx) => (
-                    <div key={appt.id} className="flex items-center gap-3 rounded-lg border border-gray-100 bg-white px-3 py-2 hover:bg-gray-50 transition">
-                      <span className="w-5 shrink-0 text-center text-xs font-bold text-gray-300">{idx + 1}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-900">{appt.patientName}</p>
-                        <p className="text-xs text-gray-400" dir="ltr">{appt.patientPhone}</p>
-                      </div>
-                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700" dir="ltr">
-                        {appt.time || appt.timeSlot}
-                      </span>
-                    </div>
-                  ))}
+                <div className="overflow-x-auto rounded-lg border border-gray-100">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-100 text-[11px] font-semibold text-gray-500">
+                        <th className="px-2 py-2 text-right w-7">#</th>
+                        <th className="px-2 py-2 text-right">الاسم</th>
+                        <th className="px-2 py-2 text-right">الهاتف</th>
+                        <th className="px-2 py-2 text-center">الوقت</th>
+                        <th className="px-2 py-2 text-center">تاريخ الحجز</th>
+                        <th className="px-2 py-2 text-center">منذ</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {sectionAppts.map((appt, idx) => {
+                        const createdAt = appt.createdAt?.toDate ? appt.createdAt.toDate() : appt.createdAt ? new Date(appt.createdAt) : null
+                        return (
+                          <tr key={appt.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-2 py-1.5 text-gray-300 font-bold text-center">{idx + 1}</td>
+                            <td className="px-2 py-1.5 font-bold text-gray-900 whitespace-nowrap">{appt.patientName}</td>
+                            <td className="px-2 py-1.5 text-blue-600 whitespace-nowrap" dir="ltr">
+                              <span className="flex items-center gap-0.5"><Phone className="h-2.5 w-2.5" />{appt.patientPhone || '—'}</span>
+                            </td>
+                            <td className="px-2 py-1.5 text-center">
+                              <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 font-bold text-blue-700" dir="ltr">
+                                {appt.time || appt.timeSlot || '—'}
+                              </span>
+                            </td>
+                            <td className="px-2 py-1.5 text-center text-gray-500 whitespace-nowrap" dir="ltr">
+                              {createdAt
+                                ? `${createdAt.toLocaleDateString('ar-EG')} ${createdAt.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`
+                                : '—'}
+                            </td>
+                            <td className="px-2 py-1.5 text-center text-gray-400 whitespace-nowrap">
+                              {timeAgo(appt.createdAt)}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )
             })()}
