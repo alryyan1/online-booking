@@ -13,6 +13,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '../ui/sheet'
 import { cn } from '../../lib/utils'
 import NotificationBell from './NotificationBell'
+import SettingsPanel from './SettingsPanel'
 import toast from 'react-hot-toast'
 
 const NAV_LINKS = [
@@ -46,7 +47,7 @@ export default function Navbar() {
     location.pathname === to || location.pathname.startsWith(to + '/')
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/80">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/80 dark:border-gray-700 dark:bg-gray-900/95">
       <div className="flex h-14 items-center gap-4 px-4 md:px-6">
 
         {/* Logo */}
@@ -78,6 +79,9 @@ export default function Navbar() {
 
         {/* Notification bell */}
         <NotificationBell facilityId={facilityId} />
+
+        {/* Settings */}
+        <SettingsPanel />
 
         {/* User dropdown */}
         {currentUser && (

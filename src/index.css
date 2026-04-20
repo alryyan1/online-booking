@@ -1,4 +1,6 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
 @import "@fontsource/tajawal/arabic-400.css";
 @import "@fontsource/tajawal/arabic-500.css";
 @import "@fontsource/tajawal/arabic-700.css";
@@ -53,3 +55,50 @@ body {
 .data-\[state\=closed\]\:slide-out-to-right[data-state=closed] { animation: slide-out-to-right 250ms ease; }
 .data-\[state\=open\]\:slide-in-from-left[data-state=open] { animation: slide-in-from-left 250ms ease; }
 .data-\[state\=closed\]\:slide-out-to-left[data-state=closed] { animation: slide-out-to-left 250ms ease; }
+
+/* ── Dark mode global overrides ───────────────────────────────── */
+.dark {
+  color-scheme: dark;
+}
+.dark body {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+/* Backgrounds */
+.dark .bg-white        { background-color: #1e293b !important; }
+.dark .bg-gray-50      { background-color: #1e293b !important; }
+.dark .bg-gray-100     { background-color: #273549 !important; }
+.dark .bg-white\/95    { background-color: rgba(30,41,59,.95) !important; }
+.dark .bg-white\/80    { background-color: rgba(30,41,59,.80) !important; }
+
+/* Borders */
+.dark .border-gray-100 { border-color: #334155 !important; }
+.dark .border-gray-200 { border-color: #334155 !important; }
+.dark .border-gray-300 { border-color: #475569 !important; }
+
+/* Text */
+.dark .text-gray-900   { color: #f1f5f9 !important; }
+.dark .text-gray-800   { color: #e2e8f0 !important; }
+.dark .text-gray-700   { color: #cbd5e1 !important; }
+.dark .text-gray-600   { color: #94a3b8 !important; }
+.dark .text-gray-500   { color: #64748b !important; }
+.dark .text-gray-400   { color: #475569 !important; }
+
+/* Inputs */
+.dark input:not([type=checkbox]):not([type=radio]),
+.dark textarea,
+.dark select {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+.dark input::placeholder { color: #475569 !important; }
+
+/* Table rows */
+.dark .divide-gray-50  > * + * { border-color: #1e293b !important; }
+.dark .divide-y        > * + * { border-color: #334155 !important; }
+
+/* Hover rows */
+.dark .hover\:bg-gray-50:hover  { background-color: #273549 !important; }
+.dark .hover\:bg-gray-100:hover { background-color: #334155 !important; }

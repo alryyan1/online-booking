@@ -182,7 +182,7 @@ export default function CallCenterBookNow() {
             disabled={isFull || (!hasCounts && loadingCounts)}
             onClick={() => handleShiftSelect(doc, spec, activeDay, shift)}
             className={cn(
-              'rounded px-3 py-0.5 text-xs font-bold transition',
+              'rounded px-3 cursor-pointer py-0.5 text-xs font-bold transition',
               isFull
                 ? 'border border-red-200 text-red-400 cursor-not-allowed opacity-60'
                 : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95 disabled:opacity-50'
