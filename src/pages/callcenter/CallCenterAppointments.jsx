@@ -179,7 +179,7 @@ export default function CallCenterAppointments() {
 
         {/* Patient search */}
         <div className="relative flex-1 min-w-36">
-          <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+          <Search className="absolute center-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
           <input
             value={patientSearch}
             onChange={(e) => setPatientSearch(e.target.value)}
@@ -190,7 +190,7 @@ export default function CallCenterAppointments() {
 
         {/* Doctor search */}
         <div className="relative flex-1 min-w-36">
-          <Stethoscope className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+          <Stethoscope className="absolute center-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
           <input
             value={doctorSearch}
             onChange={(e) => setDoctorSearch(e.target.value)}
@@ -254,13 +254,14 @@ export default function CallCenterAppointments() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="py-2 px-3 text-right text-[11px] font-semibold text-gray-500 w-8">#</th>
-                  <th className="py-2 px-3 text-right text-[11px] font-semibold text-gray-500">المريض</th>
-                  <th className="py-2 px-3 text-right text-[11px] font-semibold text-gray-500 hidden sm:table-cell">الطبيب / التخصص</th>
-                  <th className="py-2 px-3 text-right text-[11px] font-semibold text-gray-500 hidden md:table-cell">التاريخ</th>
-                  <th className="py-2 px-3 text-right text-[11px] font-semibold text-gray-500 hidden md:table-cell">الفترة</th>
-                  <th className="py-2 px-3 text-right text-[11px] font-semibold text-gray-500 hidden lg:table-cell">وقت التسجيل</th>
-                  <th className="py-2 px-3 text-center text-[11px] font-semibold text-gray-500">الحالة</th>
+                  <th className="text-center text-center text-[11px] font-semibold text-gray-500 w-8">#</th>
+                  <th className="text-center text-center text-[11px] font-semibold text-gray-500">المريض</th>
+                  <th className="text-center text-center text-[11px] font-semibold text-gray-500 w-24">الهاتف</th>
+                  <th className="text-center text-center text-[11px] font-semibold text-gray-500 hidden sm:table-cell">الطبيب / التخصص</th>
+                  <th className="text-center text-center text-[11px] font-semibold text-gray-500 hidden md:table-cell">التاريخ</th>
+                  <th className="text-center text-center text-[11px] font-semibold text-gray-500 hidden md:table-cell">الفترة</th>
+                  <th className="text-center text-center text-[11px] font-semibold text-gray-500 hidden lg:table-cell">وقت التسجيل</th>
+                  <th className="text-center text-center text-[11px] font-semibold text-gray-500">الحالة</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -279,19 +280,20 @@ export default function CallCenterAppointments() {
 
                       <td className="py-2 px-3">
                         <p className="text-sm font-bold text-gray-900 leading-tight">{apt.patientName || '—'}</p>
-                        {apt.patientPhone && (
+                     
+                      </td>
+                      <td>   {apt.patientPhone && (
                           <p className="text-[11px] text-blue-600 mt-0.5 flex items-center gap-0.5" dir="ltr">
                             <Phone className="h-2.5 w-2.5" />{apt.patientPhone}
                           </p>
-                        )}
-                      </td>
+                        )}</td>
 
-                      <td className="py-2 px-3 hidden sm:table-cell">
+                      <td className="text-center hidden sm:table-cell">
                         <p className="text-xs font-semibold text-gray-800 leading-tight">{apt.doctorName || '—'}</p>
                         <p className="text-[11px] text-gray-400">{apt.specializationName || ''}</p>
                       </td>
 
-                      <td className="py-2 px-3 hidden md:table-cell">
+                      <td className="text-center hidden md:table-cell">
                         <span className={cn(
                           'inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold border',
                           isToday
@@ -302,7 +304,7 @@ export default function CallCenterAppointments() {
                         </span>
                       </td>
 
-                      <td className="py-2 px-3 hidden md:table-cell">
+                      <td className="text-center hidden md:table-cell">
                         {apt.period === 'morning' && (
                           <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                             <Sun className="h-3 w-3" />صباحاً
@@ -316,7 +318,7 @@ export default function CallCenterAppointments() {
                         {!apt.period && <span className="text-gray-300 text-xs">—</span>}
                       </td>
 
-                      <td className="py-2 px-3 hidden lg:table-cell">
+                      <td className="text-center hidden lg:table-cell">
                         {apt.createdAt ? (() => {
                           const d = apt.createdAt.toDate ? apt.createdAt.toDate() : new Date(apt.createdAt)
                           return (
@@ -329,7 +331,7 @@ export default function CallCenterAppointments() {
                         })() : <span className="text-gray-300 text-xs">—</span>}
                       </td>
 
-                      <td className="py-2 px-3 text-center">
+                      <td className="text-center text-center">
                         {isCanceled ? (
                           <span className={cn('inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold', st.cls)}>
                             {st.label}
