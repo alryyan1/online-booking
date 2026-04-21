@@ -46,7 +46,7 @@ export const deleteFacilityUser = (userId) =>
   deleteDoc(doc(db, COLLECTIONS.USERS, userId))
 
 // Local Admin API helpers (requires npm run admin-api)
-const ADMIN_API = 'http://localhost:3001'
+const ADMIN_API = 'https://us-central1-hospitalapp-681f1.cloudfunctions.net/api'
 
 export const deleteAuthUser = async (uid) => {
   const res = await fetch(`${ADMIN_API}/auth-users/${uid}`, {

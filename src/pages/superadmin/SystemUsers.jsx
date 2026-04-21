@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { db } from '../../services/firebase'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore'
 import { getAllFacilities } from '../../services/facilityService'
 import { COLLECTIONS } from '../../utils/constants'
 import Box from '@mui/material/Box'
@@ -33,13 +33,15 @@ import ClearIcon from '@mui/icons-material/Clear'
 import PeopleIcon from '@mui/icons-material/People'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import EditIcon from '@mui/icons-material/Edit'
+import DeleteIcon from '@mui/icons-material/Delete'
+import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
 import PersonIcon from '@mui/icons-material/Person'
 import Spinner from '../../components/common/Spinner'
 import toast from 'react-hot-toast'
 
-const ADMIN_API = 'http://localhost:3001'
+const ADMIN_API = 'https://us-central1-hospitalapp-681f1.cloudfunctions.net/api'
 
 const ROLES = [
   { value: 'superadmin',  label: 'مشرف عام',   color: 'error' },
@@ -50,7 +52,8 @@ const ROLES = [
 ]
 
 const getRoleMeta = (claims) => {
-  const role = claims?.role || 'patient'
+  const role = claims?.role
+  if (!role) return { value: '', label: 'بدون دور', color: 'default' }
   return ROLES.find((r) => r.value === role) || { value: role, label: role, color: 'default' }
 }
 
@@ -61,6 +64,19 @@ const SystemUsers = () => {
   const [search, setSearch] = useState('')
   const [facilities, setFacilities] = useState([])
   const [userFacilityMap, setUserFacilityMap] = useState({}) // uid → facilityId
+
+  // Delete confirm
+  const [deleteUser, setDeleteUser] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+
+  // Create dialog
+  const [createOpen, setCreateOpen] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newEmail, setNewEmail] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [newRole, setNewRole] = useState('callcenter')
+  const [newFacilityId, setNewFacilityId] = useState('')
+  const [creating, setCreating] = useState(false)
 
   // Edit dialog
   const [editUser, setEditUser] = useState(null)
@@ -101,6 +117,68 @@ const SystemUsers = () => {
       })
     ).then((entries) => setUserFacilityMap(Object.fromEntries(entries)))
   }, [users])
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      await fetch(`${ADMIN_API}/auth-users/${deleteUser.uid}`, { method: 'DELETE' })
+        .then((r) => { if (!r.ok) throw new Error('فشل حذف الحساب') })
+      await deleteDoc(doc(db, COLLECTIONS.USERS, deleteUser.uid)).catch(() => {})
+      setUsers((prev) => prev.filter((u) => u.uid !== deleteUser.uid))
+      toast.success('تم حذف المستخدم بنجاح')
+      setDeleteUser(null)
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const handleCreate = async () => {
+    if (!newEmail.trim() || !newPassword.trim()) {
+      toast.error('البريد الإلكتروني وكلمة المرور مطلوبان')
+      return
+    }
+    setCreating(true)
+    try {
+      const res = await fetch(`${ADMIN_API}/auth-users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newEmail.trim(),
+          password: newPassword,
+          displayName: newName.trim() || undefined,
+          role: newRole,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'فشل إنشاء المستخدم')
+      }
+      const created = await res.json()
+
+      // Save facilityId to Firestore
+      if (created.uid) {
+        const selectedFacility = facilities.find((f) => f.id === newFacilityId)
+        await setDoc(doc(db, COLLECTIONS.USERS, created.uid), {
+          facilityId: newFacilityId || null,
+          facilityName: selectedFacility?.name || null,
+          role: newRole,
+          email: newEmail.trim(),
+          displayName: newName.trim() || null,
+        }, { merge: true })
+      }
+
+      toast.success('تم إنشاء المستخدم بنجاح')
+      setCreateOpen(false)
+      setNewName(''); setNewEmail(''); setNewPassword(''); setNewRole('callcenter'); setNewFacilityId('')
+      fetchUsers()
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setCreating(false)
+    }
+  }
 
   const openEdit = async (u) => {
     setEditUser(u)
@@ -173,14 +251,15 @@ const SystemUsers = () => {
             إدارة الحسابات والأدوار لجميع مستخدمي النظام.
           </Typography>
         </Box>
-        <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchUsers} disabled={loading}>تحديث</Button>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<RefreshIcon />} onClick={fetchUsers} disabled={loading}>تحديث</Button>
+          <Button variant="contained" startIcon={<PersonAddIcon />} onClick={() => setCreateOpen(true)}>مستخدم جديد</Button>
+        </Stack>
       </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} action={<Button color="inherit" size="small" onClick={fetchUsers}>إعادة المحاولة</Button>}>
-          <strong>تعذّر الاتصال بالخادم المحلي.</strong> شغّل{' '}
-          <Box component="code" sx={{ bgcolor: 'error.50', px: 0.5, borderRadius: 0.5, fontFamily: 'monospace' }}>npm run admin-api</Box>{' '}
-          في طرفية منفصلة.
+          <strong>تعذّر الاتصال بالخادم.</strong> {error}
         </Alert>
       )}
 
@@ -270,7 +349,10 @@ const SystemUsers = () => {
                         </Typography>
                       </TableCell>
                       <TableCell align="center">
-                        <IconButton size="small" color="primary" onClick={() => openEdit(u)}><EditIcon fontSize="small" /></IconButton>
+                        <Stack direction="row" spacing={0.5} justifyContent="center">
+                          <IconButton size="small" color="primary" onClick={() => openEdit(u)}><EditIcon fontSize="small" /></IconButton>
+                          <IconButton size="small" color="error" onClick={() => setDeleteUser(u)}><DeleteIcon fontSize="small" /></IconButton>
+                        </Stack>
                       </TableCell>
                     </TableRow>
                   )
@@ -280,6 +362,108 @@ const SystemUsers = () => {
           </TableContainer>
         </Card>
       )}
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={!!deleteUser} onClose={() => setDeleteUser(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Avatar sx={{ width: 40, height: 40, bgcolor: 'error.50' }}>
+              <DeleteIcon color="error" fontSize="small" />
+            </Avatar>
+            <Box>
+              <Typography fontWeight={700}>حذف المستخدم</Typography>
+              <Typography variant="caption" color="text.secondary">هذا الإجراء لا يمكن التراجع عنه</Typography>
+            </Box>
+          </Stack>
+        </DialogTitle>
+        <Divider />
+        <DialogContent>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            سيتم حذف الحساب نهائياً من Firebase Auth وقاعدة البيانات.
+          </Alert>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Avatar src={deleteUser?.photoURL} sx={{ width: 36, height: 36, bgcolor: 'grey.100' }}>
+              <PersonIcon fontSize="small" />
+            </Avatar>
+            <Box>
+              <Typography fontWeight={600}>{deleteUser?.displayName || '—'}</Typography>
+              <Typography variant="caption" color="text.secondary" dir="ltr">{deleteUser?.email || '—'}</Typography>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteUser(null)} variant="outlined" color="inherit" disabled={deleting}>إلغاء</Button>
+          <Button onClick={handleDelete} variant="contained" color="error" disabled={deleting} startIcon={<DeleteIcon />}>
+            {deleting ? 'جاري الحذف...' : 'حذف'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Dialog */}
+      <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Avatar sx={{ width: 40, height: 40, bgcolor: 'primary.50' }}>
+              <PersonAddIcon color="primary" fontSize="small" />
+            </Avatar>
+            <Typography fontWeight={700}>إنشاء مستخدم جديد</Typography>
+          </Stack>
+        </DialogTitle>
+        <Divider />
+        <DialogContent>
+          <Stack spacing={2.5} sx={{ pt: 1 }}>
+            <TextField
+              label="الاسم"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              fullWidth size="small"
+              placeholder="اسم المستخدم"
+            />
+            <TextField
+              label="البريد الإلكتروني"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              fullWidth size="small" required
+              type="email" dir="ltr"
+              placeholder="example@email.com"
+            />
+            <TextField
+              label="كلمة المرور"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              fullWidth size="small" required
+              type="password"
+              placeholder="6 أحرف على الأقل"
+            />
+            <TextField select label="الدور" value={newRole} onChange={(e) => setNewRole(e.target.value)} fullWidth size="small">
+              {ROLES.map((r) => (
+                <MenuItem key={r.value} value={r.value}>
+                  <Chip size="small" label={r.label} color={r.color} variant="outlined" sx={{ pointerEvents: 'none' }} />
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="المنشأة المرتبطة"
+              value={newFacilityId}
+              onChange={(e) => setNewFacilityId(e.target.value)}
+              fullWidth size="small"
+              helperText="اختياري"
+            >
+              <MenuItem value=""><em>بدون منشأة</em></MenuItem>
+              {facilities.map((f) => (
+                <MenuItem key={f.id} value={f.id}>{f.name}</MenuItem>
+              ))}
+            </TextField>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateOpen(false)} variant="outlined" color="inherit">إلغاء</Button>
+          <Button onClick={handleCreate} variant="contained" disabled={creating} startIcon={<PersonAddIcon />}>
+            {creating ? 'جاري الإنشاء...' : 'إنشاء'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={!!editUser} onClose={() => setEditUser(null)} maxWidth="xs" fullWidth>

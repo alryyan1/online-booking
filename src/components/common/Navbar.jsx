@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Menu, LogOut, CalendarDays, CalendarCheck, ClipboardList,
-  LayoutDashboard, ChevronDown, BarChart2,
+  LayoutDashboard, ChevronDown, BarChart2, Settings,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Avatar, AvatarFallback } from '../ui/avatar'
@@ -22,11 +22,11 @@ const NAV_LINKS = [
   { label: 'الحجوزات',      to: '/callcenter/appointments',  icon: ClipboardList },
   { label: 'جدول الأطباء',  to: '/callcenter/schedule',      icon: CalendarDays },
   { label: 'الإحصائيات',   to: '/callcenter/statistics',    icon: BarChart2 },
-  { label: 'إدارة النظام',  to: '/superadmin',               icon: LayoutDashboard },
+  { label: 'إدارة النظام',  to: '/superadmin',               icon: LayoutDashboard, role: 'superadmin' },
 ]
 
 export default function Navbar() {
-  const { currentUser, facilityId, facilityName, logout } = useAuth()
+  const { currentUser, userRole, facilityId, facilityName, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -47,6 +47,8 @@ export default function Navbar() {
   const isActive = (to) =>
     location.pathname === to || location.pathname.startsWith(to + '/')
 
+  const visibleLinks = NAV_LINKS.filter(({ role }) => !role || role === userRole)
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/80 dark:border-gray-700 dark:bg-gray-900/95">
       <div className="flex h-14 items-center gap-4 px-4 md:px-6">
@@ -58,7 +60,7 @@ export default function Navbar() {
 
         {/* Desktop nav — RTL so links read right-to-left */}
         <nav className="hidden md:flex items-center gap-1 flex-1" dir="rtl">
-          {NAV_LINKS.map(({ label, to, icon: Icon }) => (
+          {visibleLinks.map(({ label, to, icon: Icon }) => (
             <Link
               key={to}
               to={to}
@@ -106,9 +108,29 @@ export default function Navbar() {
             <DropdownMenuContent align="end" className="w-56" dir="rtl">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col gap-0.5">
-                  <p className="text-sm font-semibold">{currentUser.displayName || '—'}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold truncate">{currentUser.displayName || '—'}</p>
+                    {userRole && (
+                      <span className="shrink-0 text-[10px] font-medium bg-blue-100 text-blue-700 rounded-full px-2 py-0.5">
+                        {userRole}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500 truncate">{currentUser.email}</p>
-                  {facilityName && <p className="text-xs text-blue-600">{facilityName}</p>}
+                  {facilityName && (
+                    <div className="flex items-center justify-between mt-0.5">
+                      <p className="text-xs text-blue-600 truncate">{facilityName}</p>
+                      {facilityId && (
+                        <Link
+                          to={`/superadmin/facilities/${facilityId}`}
+                          className="text-gray-400 hover:text-blue-600 transition-colors shrink-0 mr-1"
+                          title="إعدادات المنشأة"
+                        >
+                          <Settings className="h-3.5 w-3.5" />
+                        </Link>
+                      )}
+                    </div>
+                  )}
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -150,7 +172,7 @@ export default function Navbar() {
             </SheetHeader>
 
             <nav className="flex flex-col gap-1 p-3">
-              {NAV_LINKS.map(({ label, to, icon: Icon }) => (
+              {visibleLinks.map(({ label, to, icon: Icon }) => (
                 <SheetClose key={to} asChild>
                   <Link
                     to={to}

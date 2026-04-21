@@ -6,7 +6,8 @@ import { getSpecializations, getDoctorsBySpec } from '../../services/facilitySer
 import { getBookedSlots, createCallCenterAppointment } from '../../services/appointmentService'
 import { getAvailableBookingDays, categorizeSlotsByShift } from '../../utils/bookingUtils'
 import { APPOINTMENT_STATUS, COLLECTIONS } from '../../utils/constants'
-import { Search, X, Stethoscope, User, CalendarDays, Sun, Moon, Phone } from 'lucide-react'
+import { Search, X, Stethoscope, CalendarDays, Sun, Moon, Phone } from 'lucide-react'
+import ZoomableAvatar from '../../components/common/ZoomableAvatar'
 
 const rtf = new Intl.RelativeTimeFormat('ar', { numeric: 'auto' })
 const timeAgo = (ts) => {
@@ -26,7 +27,7 @@ import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
 
 export default function CallCenterBookNow() {
-  const { facilityId } = useAuth()
+  const { facilityId, currentUser } = useAuth()
   const [specialties, setSpecialties] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -188,6 +189,8 @@ export default function CallCenterBookNow() {
         doctorId: selectedDoctor.id, doctorName: selectedDoctor.docName, facilityId,
         date: selectedDayRender.date, period: selectedShift.type, time: selectedShift.start,
         patientName: patientData.name.trim(), patientPhone: patientData.phone.trim(),
+        createdById: currentUser?.uid || null,
+        createdByName: currentUser?.displayName || currentUser?.email || 'Unknown',
       })
       toast.success('تم حجز الموعد بنجاح')
       const key = `${selectedDoctor.id}_${selectedDayRender.date}`
@@ -217,9 +220,10 @@ export default function CallCenterBookNow() {
     const countsKey = activeDay ? `${doc.id}_${activeDay.date}` : ''
     const counts = bookedCounts[countsKey] || { morning: 0, evening: 0 }
     const hasCounts = !!bookedCounts[countsKey]
-    const limit = doc[shiftType + 'PatientLimit'] || 0
+    const patientLimit = doc[shiftType + 'PatientLimit'] || 0
     const booked = counts[shiftType] || 0
-    const isFull = limit > 0 && booked >= limit
+    const isFull = patientLimit > 0 && booked >= patientLimit
+    const excess = patientLimit > 0 ? Math.max(0, booked - patientLimit) : 0
     const Icon = shiftType === 'morning' ? Sun : Moon
     const iconCls = shiftType === 'morning' ? 'text-amber-400' : 'text-indigo-400'
 
@@ -236,29 +240,36 @@ export default function CallCenterBookNow() {
             <Icon className={cn('h-3 w-3', iconCls)} />
             <span className="text-xs font-bold text-gray-700" dir="ltr">{shift.start}</span>
           </div>
-          <button
-            onClick={() => handleOpenPatientList(doc, shiftType)}
-            title="عرض الكشف"
-            className={cn(
-              'rounded-full border px-2 py-0.5 text-[10px] font-bold tabular-nums transition hover:opacity-75 cursor-pointer',
-              isFull ? 'border-red-200 bg-red-50 text-red-600'
-                : hasCounts ? 'border-blue-200 bg-blue-50 text-blue-700'
-                : 'border-gray-200 bg-gray-50 text-gray-400'
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => handleOpenPatientList(doc, shiftType)}
+              title="عرض الكشف"
+              className={cn(
+                'rounded-full border px-2 py-0.5 text-[10px] font-bold tabular-nums transition hover:opacity-75 cursor-pointer',
+                isFull ? 'border-red-200 bg-red-50 text-red-600'
+                  : hasCounts ? 'border-blue-200 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 bg-gray-50 text-gray-400'
+              )}
+            >
+              {hasCounts ? `${booked}/${patientLimit}` : '—/—'}
+            </button>
+            {excess > 0 && (
+              <span className="rounded-full bg-orange-500 px-1.5 py-0.5 text-[9px] font-bold text-white" title="تجاوز الحد">
+                +{excess}
+              </span>
             )}
-          >
-            {hasCounts ? `${booked}/${limit}` : '—/—'}
-          </button>
+          </div>
           <button
-            disabled={isFull || (!hasCounts && loadingCounts)}
+            disabled={!hasCounts && loadingCounts}
             onClick={() => handleShiftSelect(doc, spec, activeDay, shift)}
             className={cn(
-              'rounded px-3 cursor-pointer py-0.5 text-xs font-bold transition',
+              'rounded px-3 cursor-pointer py-0.5 text-xs font-bold transition active:scale-95 disabled:opacity-50',
               isFull
-                ? 'border border-red-200 text-red-400 cursor-not-allowed opacity-60'
-                : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95 disabled:opacity-50'
+                ? 'bg-orange-500 text-white hover:bg-orange-600'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
             )}
           >
-            {isFull ? 'مغلق' : 'حجز'}
+            حجز
           </button>
         </div>
       </td>
@@ -346,11 +357,7 @@ export default function CallCenterBookNow() {
                                 onClick={() => handleOpenPatientList(doc)}
                                 className="flex items-center gap-2 text-right hover:opacity-70 transition"
                               >
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 overflow-hidden">
-                                  {doc.photoUrl
-                                    ? <img src={doc.photoUrl} alt={doc.docName} className="h-full w-full object-cover" />
-                                    : <User className="h-4 w-4 text-blue-400" />}
-                                </div>
+                                <ZoomableAvatar src={doc.photoUrl} alt={doc.docName} size={8} />
                                 <div>
                                   <p className="text-xs font-bold text-gray-900">{doc.docName}</p>
                                   <p className="text-[11px] text-gray-400">{doc.phoneNumber || '—'}</p>

@@ -339,6 +339,7 @@ const SpecializationsTab = ({ facilityId }) => {
                         {doctor.isBookingEnabled ? 'حجز مفتوح' : 'حجز مغلق'}
                       </button>
                       <button onClick={() => openEditDoc(doctorsDialogSpec.id, doctor)} className={iconBtn}><Pencil className="h-3 w-3" /></button>
+                      <button onClick={() => handleDeleteDoc(doctorsDialogSpec.id, doctor)} className={cn(iconBtn, 'text-red-500 border-red-200 hover:bg-red-50')}><Trash2 className="h-3 w-3" /></button>
                     </div>
                   </div>
                 ))}
