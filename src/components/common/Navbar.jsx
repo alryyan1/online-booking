@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Menu, LogOut, CalendarDays, CalendarCheck, ClipboardList,
-  LayoutDashboard, ChevronDown,
+  LayoutDashboard, ChevronDown, BarChart2,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Avatar, AvatarFallback } from '../ui/avatar'
@@ -21,6 +21,7 @@ const NAV_LINKS = [
   { label: 'حجز موعد',      to: '/callcenter/book',          icon: CalendarCheck },
   { label: 'الحجوزات',      to: '/callcenter/appointments',  icon: ClipboardList },
   { label: 'جدول الأطباء',  to: '/callcenter/schedule',      icon: CalendarDays },
+  { label: 'الإحصائيات',   to: '/callcenter/statistics',    icon: BarChart2 },
   { label: 'إدارة النظام',  to: '/superadmin',               icon: LayoutDashboard },
 ]
 

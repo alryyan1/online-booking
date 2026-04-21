@@ -1,5 +1,5 @@
-import { createHashRouter, Navigate, Outlet } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { createHashRouter, Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import ProtectedRoute from '../components/common/ProtectedRoute'
 import Navbar from '../components/common/Navbar'
 
@@ -22,6 +22,7 @@ import CallCenterBookNow from '../pages/callcenter/CallCenterBookNow'
 import CallCenterBookToday from '../pages/callcenter/CallCenterBookToday'
 import CallCenterAppointments from '../pages/callcenter/CallCenterAppointments'
 import CallCenterSchedule from '../pages/callcenter/CallCenterSchedule'
+import Statistics from '../pages/callcenter/Statistics'
 
 // Not Found
 import NotFound from '../pages/NotFound'
@@ -83,6 +84,7 @@ const router = createHashRouter([
           { path: 'callcenter/book-today',             element: auth(<CallCenterBookToday />) },
           { path: 'callcenter/appointments',           element: auth(<CallCenterAppointments />) },
           { path: 'callcenter/schedule',               element: auth(<CallCenterSchedule />) },
+          { path: 'callcenter/statistics',             element: auth(<Statistics />) },
         ],
       },
 
