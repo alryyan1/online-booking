@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
+import { collection, query, orderBy, limit, onSnapshot, QuerySnapshot, DocumentData, Timestamp } from 'firebase/firestore'
 import { db } from '../../services/firebase'
 import { useAuth } from '../../contexts/AuthContext'
 import { updateAppointmentStatus } from '../../services/appointmentService'
@@ -11,9 +11,28 @@ import Spinner from '../../components/common/Spinner'
 import toast from 'react-hot-toast'
 import { cn } from '../../lib/utils'
 
+export interface Appointment {
+  id: string;
+  patientName?: string;
+  patientPhone?: string;
+  doctorName?: string;
+  specializationName?: string;
+  date?: string;
+  period?: 'morning' | 'evening' | string;
+  createdAt?: Timestamp | Date | any;
+  status: string;
+  [key: string]: any;
+}
+
+interface StatusMapEntry {
+  label: string;
+  cls: string;
+}
+
 const rtf = new Intl.RelativeTimeFormat('ar', { numeric: 'auto' })
-const timeAgo = (date) => {
-  const secs = Math.round((date - Date.now()) / 1000)
+const timeAgo = (date: number | Date): string => {
+  const time = date instanceof Date ? date.getTime() : Number(date)
+  const secs = Math.round((time - Date.now()) / 1000)
   const abs = Math.abs(secs)
   if (abs < 60)    return rtf.format(Math.round(secs), 'second')
   if (abs < 3600)  return rtf.format(Math.round(secs / 60), 'minute')
@@ -21,7 +40,7 @@ const timeAgo = (date) => {
   return rtf.format(Math.round(secs / 86400), 'day')
 }
 
-const STATUS_MAP = {
+const STATUS_MAP: Record<string, StatusMapEntry> = {
   [APPOINTMENT_STATUS.PENDING]:   { label: 'قيد الانتظار', cls: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
   [APPOINTMENT_STATUS.CONFIRMED]: { label: 'مؤكد',         cls: 'bg-green-100 text-green-700 border-green-200' },
   [APPOINTMENT_STATUS.CANCELED]:  { label: 'ملغي',         cls: 'bg-red-100 text-red-700 border-red-200' },
@@ -31,16 +50,16 @@ const STATUS_MAP = {
 const REALTIME_LIMIT = 150
 
 export default function CallCenterAppointments() {
-  const { facilityId } = useAuth()
-  const [appointments, setAppointments] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [cancelingId, setCancelingId] = useState(null)
-  const [activeTab, setActiveTab] = useState('today')
-  const [patientSearch, setPatientSearch] = useState('')
-  const [doctorSearch, setDoctorSearch] = useState('')
-  const [dateFilter, setDateFilter] = useState('')
-  const [periodFilter, setPeriodFilter] = useState('all')
-  const initializedRef = useRef(false)
+  const { facilityId } = useAuth() as { facilityId?: string }
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [cancelingId, setCancelingId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<string>('today')
+  const [patientSearch, setPatientSearch] = useState<string>('')
+  const [doctorSearch, setDoctorSearch] = useState<string>('')
+  const [dateFilter, setDateFilter] = useState<string>('')
+  const [periodFilter, setPeriodFilter] = useState<string>('all')
+  const initializedRef = useRef<boolean>(false)
 
   const todayStr = formatDate(new Date())
 
@@ -53,8 +72,8 @@ export default function CallCenterAppointments() {
       limit(REALTIME_LIMIT)
     )
 
-    const unsub = onSnapshot(q, (snap) => {
-      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+    const unsub = onSnapshot(q, (snap: QuerySnapshot<DocumentData>) => {
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Appointment))
 
       if (!initializedRef.current) {
         initializedRef.current = true
@@ -71,7 +90,7 @@ export default function CallCenterAppointments() {
         }
         return docs
       })
-    }, (err) => {
+    }, (err: Error) => {
       console.error(err)
       toast.error('حدث خطأ في الاتصال')
       setLoading(false)
@@ -80,23 +99,25 @@ export default function CallCenterAppointments() {
     return unsub
   }, [facilityId])
 
-  const handleCancel = async (id) => {
+  const handleCancel = async (id: string) => {
     if (!window.confirm('هل أنت متأكد من إلغاء هذا الحجز؟')) return
     const aptData = appointments.find((a) => a.id === id)
     setCancelingId(id)
     try {
-      await updateAppointmentStatus(facilityId, id, APPOINTMENT_STATUS.CANCELED)
+      if (facilityId) {
+        await updateAppointmentStatus(facilityId, id, APPOINTMENT_STATUS.CANCELED)
+      }
       toast.success('تم إلغاء الحجز')
       if (aptData) {
         Promise.all([
-          sendSMS(aptData.patientPhone, buildCancelMessage({
+          sendSMS(aptData.patientPhone || '', buildCancelMessage({
             patientName: aptData.patientName,
             doctorName: aptData.doctorName,
             date: aptData.date,
             shift: aptData.period,
           })),
           sendCancelWhatsApp({
-            phone: aptData.patientPhone,
+            phone: aptData.patientPhone || '',
             patientName: aptData.patientName,
             doctorName: aptData.doctorName,
             date: aptData.date,
@@ -254,14 +275,14 @@ export default function CallCenterAppointments() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="text-center text-center text-[11px] font-semibold text-gray-500 w-8">#</th>
-                  <th className="text-center text-center text-[11px] font-semibold text-gray-500">المريض</th>
-                  <th className="text-center text-center text-[11px] font-semibold text-gray-500 w-24">الهاتف</th>
-                  <th className="text-center text-center text-[11px] font-semibold text-gray-500 hidden sm:table-cell">الطبيب / التخصص</th>
-                  <th className="text-center text-center text-[11px] font-semibold text-gray-500 hidden md:table-cell">التاريخ</th>
-                  <th className="text-center text-center text-[11px] font-semibold text-gray-500 hidden md:table-cell">الفترة</th>
-                  <th className="text-center text-center text-[11px] font-semibold text-gray-500 hidden lg:table-cell">وقت التسجيل</th>
-                  <th className="text-center text-center text-[11px] font-semibold text-gray-500">الحالة</th>
+                  <th className="text-center text-[11px] font-semibold text-gray-500 w-8">#</th>
+                  <th className="text-center text-[11px] font-semibold text-gray-500">المريض</th>
+                  <th className="text-center text-[11px] font-semibold text-gray-500 w-24">الهاتف</th>
+                  <th className="text-center text-[11px] font-semibold text-gray-500 hidden sm:table-cell">الطبيب / التخصص</th>
+                  <th className="text-center text-[11px] font-semibold text-gray-500 hidden md:table-cell">التاريخ</th>
+                  <th className="text-center text-[11px] font-semibold text-gray-500 hidden md:table-cell">الفترة</th>
+                  <th className="text-center text-[11px] font-semibold text-gray-500 hidden lg:table-cell">وقت التسجيل</th>
+                  <th className="text-center text-[11px] font-semibold text-gray-500">الحالة</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -274,12 +295,12 @@ export default function CallCenterAppointments() {
                       key={apt.id}
                       className={cn('hover:bg-gray-50 transition-colors', isCanceled && 'opacity-50')}
                     >
-                      <td className="py-2 px-3">
-                        <span className="text-[11px] text-gray-400 font-semibold">{idx + 1}</span>
+                      <td className="py-2 px-3  text-center">
+                        <span className="text-[11px] text-gray-400 font-semibold">{filtered.length - idx}</span>
                       </td>
 
-                      <td className="py-2 px-3">
-                        <p className="text-sm font-bold text-gray-900 leading-tight">{apt.patientName || '—'}</p>
+                      <td className="py-2 px-3 text-center">
+                        <p className="text-sm font-bold text-center text-gray-900 leading-tight">{apt.patientName || '—'}</p>
                      
                       </td>
                       <td>   {apt.patientPhone && (
@@ -326,12 +347,15 @@ export default function CallCenterAppointments() {
                               <p className="text-[11px] font-semibold text-gray-700">{d.toLocaleDateString('ar-EG')}</p>
                               <p className="text-[10px] text-gray-500">{d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
                               <p className="text-[10px] text-gray-400">{timeAgo(d)}</p>
+                              {apt.createdByName && (
+                                <p className="text-[10px] text-blue-500 mt-1" dir="rtl">بواسطة: {apt.createdByName}</p>
+                              )}
                             </div>
                           )
                         })() : <span className="text-gray-300 text-xs">—</span>}
                       </td>
 
-                      <td className="text-center text-center">
+                      <td className="text-center">
                         {isCanceled ? (
                           <span className={cn('inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold', st.cls)}>
                             {st.label}

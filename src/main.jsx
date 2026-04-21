@@ -20,6 +20,12 @@ const cacheRtl = createCache({
 document.documentElement.setAttribute('dir', 'rtl')
 document.documentElement.setAttribute('lang', 'ar')
 
+import eruda from 'eruda'
+
+if (import.meta.env.DEV) {
+  eruda.init()
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <CacheProvider value={cacheRtl}>
