@@ -326,7 +326,7 @@ const CallCenterBookToday = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50 text-xs font-semibold text-gray-500">
-                  <th className="px-3 py-2.5 text-center">التخصص</th>
+                  <th className="px-3 py-2.5 text-center"></th>
                   <th className="px-3 py-2.5 text-center">الطبيب</th>
                   <th className="px-3 py-2.5 text-center">
                     <span className="flex items-center justify-center gap-1">
@@ -349,19 +349,14 @@ const CallCenterBookToday = () => {
 
                     return (
                       <tr key={doc.id} className="hover:bg-gray-50/60 transition-colors">
-                        <td className="px-3 py-2 text-xs font-semibold text-gray-500 whitespace-nowrap">
-                          {spec.specName}
+                        <td className="px-3 py-2 text-center">
+                          <ZoomableAvatar src={doc.photoUrl} alt={doc.docName} size={7} />
                         </td>
-                        <td className="px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            <ZoomableAvatar src={doc.photoUrl} alt={doc.docName} size={7} />
-                            <div>
-                              <p className="text-xs font-bold text-gray-900 leading-tight">{doc.docName}</p>
-                              {doc.phoneNumber && (
-                                <p className="text-[11px] text-gray-400" dir="ltr">{doc.phoneNumber}</p>
-                              )}
-                            </div>
-                          </div>
+                        <td className="px-3 py-2 text-center" title={spec.specName}>
+                          <p className="text-xs font-bold text-gray-900 leading-tight cursor-default">{doc.docName}</p>
+                          {doc.phoneNumber && (
+                            <p className="text-[11px] text-gray-400" dir="ltr">{doc.phoneNumber}</p>
+                          )}
                         </td>
                         <ShiftCell doc={doc} spec={spec} shift={morningShift} />
                         <ShiftCell doc={doc} spec={spec} shift={eveningShift} />
