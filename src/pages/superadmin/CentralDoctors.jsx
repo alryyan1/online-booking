@@ -5,7 +5,7 @@ import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
-import MenuItem from '@mui/material/MenuItem'
+import Autocomplete from '@mui/material/Autocomplete'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -63,12 +63,13 @@ const CentralDoctors = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.name.trim()) { toast.error('اسم الطبيب مطلوب'); return }
+    if (!editTarget && !form.specialization) { toast.error('يجب اختيار التخصص'); return }
     setSaving(true)
     try {
-      if (editTarget) { await updateCentralDoctor(editTarget.id, form); toast.success('تم تحديث بيانات الطبيب') }
-      else { await createCentralDoctor(form); toast.success('تم إضافة الطبيب') }
+      if (editTarget) { await updateCentralDoctor(editTarget.docId || String(editTarget.id), form); toast.success('تم تحديث بيانات الطبيب') }
+      else { await createCentralDoctor(form); toast.success(`تم إضافة الطبيب "${form.name.trim()}" بنجاح`) }
       closeModal(); load()
-    } catch { toast.error('حدث خطأ، يرجى المحاولة') }
+    } catch (err) { toast.error(err?.message || 'حدث خطأ، يرجى المحاولة') }
     finally { setSaving(false) }
   }
 
@@ -149,21 +150,27 @@ const CentralDoctors = () => {
         </Card>
       )}
 
-      <Modal isOpen={modalOpen} onClose={closeModal} title={editTarget ? 'تعديل بيانات الطبيب' : 'إضافة طبيب جديد'} size="md">
+      <Modal isOpen={modalOpen} onClose={closeModal} title={editTarget ? 'تعديل بيانات الطبيب' : 'إضافة طبيب جديد'} size="md" bodyClassName="overflow-visible px-5 py-4">
         <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <TextField label="اسم الطبيب *" name="name" value={form.name} onChange={handleField} required fullWidth placeholder="د. محمد أحمد" />
             </Grid>
             <Grid item xs={12} sm={6}>
-              {specialties.length > 0 ? (
-                <TextField select label="التخصص" name="specialization" value={form.specialization} onChange={handleField} fullWidth>
-                  <MenuItem value="">اختر التخصص...</MenuItem>
-                  {specialties.map((s) => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
-                </TextField>
-              ) : (
-                <TextField label="التخصص" name="specialization" value={form.specialization} onChange={handleField} fullWidth placeholder="طب عام، قلب..." />
-              )}
+              <Autocomplete
+                fullWidth
+                disablePortal
+                size="medium"
+                options={specialties}
+                getOptionLabel={(opt) => opt.name || ''}
+                value={specialties.find((s) => String(s.id) === String(form.specialization)) || null}
+                onChange={(_, val) => setForm((f) => ({ ...f, specialization: val ? String(val.id) : '' }))}
+                noOptionsText="لا توجد نتائج"
+                sx={{ width: '100%' }}
+                renderInput={(params) => (
+                  <TextField {...params} size="medium" label="التخصص *" placeholder="ابحث عن التخصص..." fullWidth sx={{ width: '100%' }} />
+                )}
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField label="رقم الهاتف" name="phoneNumber" value={form.phoneNumber} onChange={handleField} fullWidth inputProps={{ dir: 'ltr' }} />

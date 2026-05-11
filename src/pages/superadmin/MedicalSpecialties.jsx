@@ -27,7 +27,7 @@ import Spinner from '../../components/common/Spinner'
 import { getSpecialties, createSpecialty, updateSpecialty, deleteSpecialty } from '../../services/specialtyService'
 import toast from 'react-hot-toast'
 
-const EMPTY = { name: '', description: '', imageUrl: '', active: true }
+const EMPTY = { name: '', description: '', active: true }
 
 const MedicalSpecialties = () => {
   const [specialties, setSpecialties] = useState([])
@@ -64,22 +64,30 @@ const MedicalSpecialties = () => {
     if (!form.name.trim()) { toast.error('اسم التخصص مطلوب'); return }
     setSaving(true)
     try {
-      if (editTarget) { await updateSpecialty(editTarget.id, form); toast.success('تم تحديث التخصص') }
-      else { await createSpecialty(form); toast.success('تم إضافة التخصص') }
+      if (editTarget) {
+        await updateSpecialty(editTarget.docId || String(editTarget.id), form)
+        toast.success('تم تحديث التخصص')
+      } else {
+        await createSpecialty(form)
+        toast.success(`تم إضافة التخصص "${form.name.trim()}" بنجاح`)
+      }
       closeModal(); load()
-    } catch { toast.error('حدث خطأ، يرجى المحاولة') }
+    } catch (err) { toast.error(err?.message || 'حدث خطأ، يرجى المحاولة') }
     finally { setSaving(false) }
   }
 
   const handleDelete = async (s) => {
     if (!window.confirm(`هل أنت متأكد من حذف "${s.name}"؟`)) return
-    try { await deleteSpecialty(s.id); toast.success('تم حذف التخصص'); load() }
+    try { await deleteSpecialty(s.docId || String(s.id)); toast.success('تم حذف التخصص'); load() }
     catch { toast.error('حدث خطأ أثناء الحذف') }
   }
 
   const handleToggle = async (s) => {
-    try { await updateSpecialty(s.id, { active: !s.active }); toast.success(s.active ? 'تم إيقاف التخصص' : 'تم تفعيل التخصص'); load() }
-    catch { toast.error('حدث خطأ') }
+    try {
+      await updateSpecialty(s.docId || String(s.id), { active: !s.active })
+      toast.success(s.active ? 'تم إيقاف التخصص' : 'تم تفعيل التخصص')
+      load()
+    } catch { toast.error('حدث خطأ') }
   }
 
   const activeCount = specialties.filter((s) => s.active !== false).length
@@ -167,7 +175,6 @@ const MedicalSpecialties = () => {
         <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
           <TextField label="اسم التخصص *" name="name" value={form.name} onChange={handleField} required fullWidth />
           <TextField label="الوصف" name="description" value={form.description} onChange={handleField} fullWidth multiline rows={2} />
-          <TextField label="رابط أيقونة/صورة" name="imageUrl" value={form.imageUrl} onChange={handleField} fullWidth inputProps={{ dir: 'ltr' }} placeholder="https://..." />
           <FormControlLabel control={<Switch name="active" checked={form.active} onChange={handleField} />} label="التخصص مفعل" />
           <DialogActions sx={{ px: 0, pb: 0 }}>
             <Button onClick={closeModal} variant="outlined" color="inherit">إلغاء</Button>

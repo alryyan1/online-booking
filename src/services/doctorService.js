@@ -4,6 +4,7 @@ import {
   getDocs,
   getDoc,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -18,6 +19,20 @@ import { COLLECTIONS } from '../utils/constants'
 
 const centralRef = () => collection(db, 'allDoctors')
 
+const getNextNumericId = async (collectionPath) => {
+  const snapshot = await getDocs(collection(db, collectionPath))
+  let maxId = 0
+  for (const d of snapshot.docs) {
+    let idNum = parseInt(d.id, 10)
+    if (isNaN(idNum)) {
+      const field = d.data().id
+      idNum = typeof field === 'number' ? field : parseInt(field, 10)
+    }
+    if (!isNaN(idNum) && idNum > maxId) maxId = idNum
+  }
+  return String(maxId + 1)
+}
+
 export const getCentralDoctors = async () => {
   const snap = await getDocs(centralRef())
   const docs = snap.docs.map((d) => {
@@ -28,7 +43,6 @@ export const getCentralDoctors = async () => {
       docId: d.id
     }
   })
-  console.log('Fetched central doctors:', docs.length, docs.slice(0, 2))
   return docs
 }
 
@@ -38,8 +52,20 @@ export const getCentralDoctorById = async (doctorId) => {
   return { id: snap.id, ...snap.data() }
 }
 
-export const createCentralDoctor = (data) =>
-  addDoc(centralRef(), { ...data, createdAt: serverTimestamp() })
+export const createCentralDoctor = async (data) => {
+  if (!data.name?.trim()) throw new Error('اسم الطبيب مطلوب')
+  if (!data.specialization) throw new Error('يجب اختيار التخصص')
+
+  const id = await getNextNumericId('allDoctors')
+  await setDoc(doc(db, 'allDoctors', id), {
+    id: parseInt(id, 10),
+    name: data.name.trim(),
+    specialization: data.specialization,
+    subSpecialization: data.subSpecialization ?? '',
+    phoneNumber: data.phoneNumber?.trim() ?? '',
+    createdAt: serverTimestamp(),
+  })
+}
 
 export const updateCentralDoctor = (doctorId, data) =>
   updateDoc(doc(db, 'allDoctors', doctorId), data)

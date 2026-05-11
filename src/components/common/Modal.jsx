@@ -4,7 +4,7 @@ import { cn } from '../../lib/utils'
 
 const sizeMap = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl', '2xl': 'max-w-2xl', '3xl': 'max-w-3xl', '4xl': 'max-w-4xl', '5xl': 'max-w-5xl' }
 
-const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => (
+const Modal = ({ isOpen, onClose, title, children, size = 'md', bodyClassName }) => (
   <DialogPrimitive.Root open={!!isOpen} onOpenChange={(open) => !open && onClose()}>
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
@@ -29,7 +29,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => (
         </div>
 
         {/* Body */}
-        <div className="max-h-[80vh] overflow-y-auto px-5 py-4">
+        <div className={cn('px-5 py-4', bodyClassName ?? 'max-h-[80vh] overflow-y-auto')}>
           {children}
         </div>
       </DialogPrimitive.Content>
