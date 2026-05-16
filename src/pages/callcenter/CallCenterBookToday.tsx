@@ -5,7 +5,7 @@ import { getBookedSlots, createCallCenterAppointment, updateAppointmentStatus } 
 import { sendSMS, sendWhatsApp, sendCancelWhatsApp, buildBookingMessage, buildCancelMessage } from '../../services/notificationService'
 import { getWorkingShifts, getDayName, formatDate, categorizeSlotsByShift } from '../../utils/bookingUtils'
 import { APPOINTMENT_STATUS } from '../../utils/constants'
-import { Search, X, Stethoscope, Zap, Sun, Moon } from 'lucide-react'
+import { Search, X, Stethoscope, Zap, Sun, Moon, ChevronDown, LayoutGrid, List } from 'lucide-react'
 import Spinner from '../../components/common/Spinner'
 import Modal from '../../components/common/Modal'
 import ZoomableAvatar from '../../components/common/ZoomableAvatar'
@@ -88,6 +88,8 @@ const CallCenterBookToday = () => {
   const [loadingList, setLoadingList] = useState<boolean>(false)
   const [listTab, setListTab] = useState<string>('morning')
   const [cancelingId, setCancelingId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table')
+  const [expandedSpec, setExpandedSpec] = useState<string | null>(null)
 
   const loadData = async () => {
     if (!facilityId) { setLoading(false); return }
@@ -290,20 +292,40 @@ const CallCenterBookToday = () => {
           <h1 className="text-base font-bold text-gray-900">حجز اليوم — {todayDate}</h1>
         </div>
 
-        {/* Search */}
-        <div className="relative w-48">
-          <Search className="absolute center-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
-          <input
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="بحث..."
-            className="w-full rounded-md border border-gray-200 bg-white py-1.5 pr-8 pl-7 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-          />
-          {searchTerm && (
-            <button onClick={() => setSearchTerm('')} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-              <X className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex overflow-hidden rounded-lg border border-gray-200">
+            <button
+              onClick={() => setViewMode('table')}
+              title="عرض جدول"
+              className={cn('p-1.5 transition', viewMode === 'table' ? 'bg-blue-600 text-white' : 'bg-white text-gray-400 hover:text-gray-600')}
+            >
+              <List className="h-4 w-4" />
             </button>
-          )}
+            <button
+              onClick={() => setViewMode('cards')}
+              title="عرض تخصصات"
+              className={cn('p-1.5 transition', viewMode === 'cards' ? 'bg-blue-600 text-white' : 'bg-white text-gray-400 hover:text-gray-600')}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Search */}
+          <div className="relative w-48">
+            <Search className="absolute center-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="بحث..."
+              className="w-full rounded-md border border-gray-200 bg-white py-1.5 pr-8 pl-7 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -318,9 +340,9 @@ const CallCenterBookToday = () => {
           <p className="text-sm text-gray-400">لا توجد نتائج تطابق "{searchTerm}"</p>
           <button onClick={() => setSearchTerm('')} className="mt-2 text-xs text-blue-600 hover:underline">عرض الكل</button>
         </div>
-      ) : (
+      ) : viewMode === 'table' ? (
 
-        /* ── Table ── */
+        /* ── Table view ── */
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -346,7 +368,6 @@ const CallCenterBookToday = () => {
                     const shifts = getWorkingShifts(doc, today) || []
                     const morningShift = shifts.find((s: any) => s.type === 'morning') as Shift | undefined
                     const eveningShift = shifts.find((s: any) => s.type === 'evening') as Shift | undefined
-
                     return (
                       <tr key={doc.id} className="hover:bg-gray-50/60 transition-colors">
                         <td className="px-3 py-2 text-center">
@@ -367,6 +388,82 @@ const CallCenterBookToday = () => {
               </tbody>
             </table>
           </div>
+        </div>
+
+      ) : (
+
+        /* ── Cards view ── */
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 items-start">
+          {filteredSpecialties.map((spec) => {
+            const isExpanded = expandedSpec === spec.id
+            return (
+              <div key={spec.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+
+                {/* Specialty header */}
+                <button
+                  onClick={() => setExpandedSpec(isExpanded ? null : spec.id)}
+                  className="flex w-full items-center justify-between px-4 py-3 text-right transition hover:bg-gray-50"
+                >
+                  <div className="flex items-center gap-2">
+                    <Stethoscope className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm font-bold text-gray-900">{spec.specName}</span>
+                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-600">
+                      {spec.doctors.length} طبيب
+                    </span>
+                  </div>
+                  <ChevronDown className={cn('h-4 w-4 text-gray-400 transition-transform duration-200', isExpanded && 'rotate-180')} />
+                </button>
+
+                {/* Doctors table (accordion body) */}
+                {isExpanded && (
+                  <div className="border-t border-gray-100">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-gray-50 text-[11px] font-semibold text-gray-500">
+                            <th className="px-3 py-2 text-center"></th>
+                            <th className="px-3 py-2 text-center">الطبيب</th>
+                            <th className="px-3 py-2 text-center">
+                              <span className="flex items-center justify-center gap-1">
+                                <Sun className="h-3.5 w-3.5 text-amber-400" /> صباحاً
+                              </span>
+                            </th>
+                            <th className="px-3 py-2 text-center">
+                              <span className="flex items-center justify-center gap-1">
+                                <Moon className="h-3.5 w-3.5 text-indigo-400" /> مساءً
+                              </span>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {spec.doctors.map((doc) => {
+                            const shifts = getWorkingShifts(doc, today) || []
+                            const morningShift = shifts.find((s: any) => s.type === 'morning') as Shift | undefined
+                            const eveningShift = shifts.find((s: any) => s.type === 'evening') as Shift | undefined
+                            return (
+                              <tr key={doc.id} className="hover:bg-gray-50/60 transition-colors">
+                                <td className="px-3 py-2 text-center">
+                                  <ZoomableAvatar src={doc.photoUrl} alt={doc.docName} size={7} />
+                                </td>
+                                <td className="px-3 py-2 text-center">
+                                  <p className="text-xs font-bold text-gray-900 leading-tight">{doc.docName}</p>
+                                  {doc.phoneNumber && (
+                                    <p className="text-[11px] text-gray-400" dir="ltr">{doc.phoneNumber}</p>
+                                  )}
+                                </td>
+                                <ShiftCell doc={doc} spec={spec} shift={morningShift} />
+                                <ShiftCell doc={doc} spec={spec} shift={eveningShift} />
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
