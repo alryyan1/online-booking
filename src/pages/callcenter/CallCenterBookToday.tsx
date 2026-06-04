@@ -375,6 +375,7 @@ const CallCenterBookToday = () => {
                         </td>
                         <td className="px-3 py-2 text-center" title={spec.specName}>
                           <p className="text-xs font-bold text-gray-900 leading-tight cursor-default">{doc.docName}</p>
+                          {doc.centralDoctorId && <p className="text-[11px] text-blue-400 font-mono">#{doc.centralDoctorId}</p>}
                           {doc.phoneNumber && (
                             <p className="text-[11px] text-gray-400" dir="ltr">{doc.phoneNumber}</p>
                           )}

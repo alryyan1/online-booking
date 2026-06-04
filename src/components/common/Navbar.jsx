@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Menu, LogOut, CalendarDays, CalendarCheck, ClipboardList,
-  LayoutDashboard, ChevronDown, BarChart2, Settings,
+  LayoutDashboard, ChevronDown, BarChart2, Settings, FlaskConical,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { Avatar, AvatarFallback } from '../ui/avatar'
@@ -22,6 +22,7 @@ const NAV_LINKS = [
   { label: 'الحجوزات',      to: '/callcenter/appointments',  icon: ClipboardList },
   { label: 'جدول الأطباء',  to: '/callcenter/schedule',      icon: CalendarDays },
   { label: 'الإحصائيات',   to: '/callcenter/statistics',    icon: BarChart2 },
+  { label: 'قائمة الفحوصات', to: '/lab/pricelist',           icon: FlaskConical },
   { label: 'إدارة النظام',  to: '/superadmin',               icon: LayoutDashboard, role: 'superadmin' },
 ]
 

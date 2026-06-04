@@ -360,6 +360,7 @@ export default function CallCenterBookNow() {
                                 <ZoomableAvatar src={doc.photoUrl} alt={doc.docName} size={8} />
                                 <div>
                                   <p className="text-xs font-bold text-gray-900">{doc.docName}</p>
+                                  {doc.centralDoctorId && <p className="text-[11px] text-blue-400 font-mono">#{doc.centralDoctorId}</p>}
                                   <p className="text-[11px] text-gray-400">{doc.phoneNumber || '—'}</p>
                                 </div>
                               </button>

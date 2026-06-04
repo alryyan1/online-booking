@@ -246,6 +246,9 @@ export default function CallCenterSchedule() {
                           <p className="text-xs font-bold text-gray-900 leading-tight whitespace-nowrap">
                             {doc.docName}
                           </p>
+                          {(doc as any).centralDoctorId && (
+                            <p className="text-[11px] text-blue-400 font-mono">#{(doc as any).centralDoctorId}</p>
+                          )}
                           {doc.phoneNumber && (
                             <p className="text-[11px] text-gray-400" dir="ltr">
                               {doc.phoneNumber}

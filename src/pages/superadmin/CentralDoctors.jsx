@@ -127,7 +127,10 @@ const CentralDoctors = () => {
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Avatar sx={{ bgcolor: 'primary.100', width: 36, height: 36 }}><PersonIcon fontSize="small" color="primary" /></Avatar>
-                        <Typography fontWeight={600}>{d.name}</Typography>
+                        <Box>
+                          <Typography fontWeight={600}>{d.name}</Typography>
+                          {d.id != null && <Typography variant="caption" color="text.disabled">#{d.id}</Typography>}
+                        </Box>
                       </Box>
                     </TableCell>
                     <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>

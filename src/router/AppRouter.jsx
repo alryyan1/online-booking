@@ -24,6 +24,9 @@ import CallCenterAppointments from '../pages/callcenter/CallCenterAppointments'
 import CallCenterSchedule from '../pages/callcenter/CallCenterSchedule'
 import Statistics from '../pages/callcenter/Statistics'
 
+// Lab
+import PriceList from '../pages/lab/PriceList'
+
 // Not Found
 import NotFound from '../pages/NotFound'
 
@@ -85,6 +88,9 @@ const router = createHashRouter([
           { path: 'callcenter/appointments',           element: auth(<CallCenterAppointments />) },
           { path: 'callcenter/schedule',               element: auth(<CallCenterSchedule />) },
           { path: 'callcenter/statistics',             element: auth(<Statistics />) },
+
+          // Lab
+          { path: 'lab/pricelist',                     element: auth(<PriceList />) },
         ],
       },
 

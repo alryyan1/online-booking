@@ -324,6 +324,7 @@ const SpecializationsTab = ({ facilityId }) => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{doctor.docName}</p>
+                      {doctor.centralDoctorId && <p className="text-[11px] text-blue-400 font-mono">#{doctor.centralDoctorId}</p>}
                       {doctor.phoneNumber && <p className="text-xs text-gray-400" dir="ltr">{doctor.phoneNumber}</p>}
                       <p className="text-[11px] text-gray-400">ص: {doctor.morningPatientLimit} | م: {doctor.eveningPatientLimit}</p>
                     </div>
