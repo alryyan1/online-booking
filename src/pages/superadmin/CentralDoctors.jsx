@@ -75,7 +75,7 @@ const CentralDoctors = () => {
 
   const handleDelete = async (d) => {
     if (!window.confirm(`هل أنت متأكد من حذف "${d.name}"؟`)) return
-    try { await deleteCentralDoctor(d.id); toast.success('تم حذف الطبيب'); load() }
+    try { await deleteCentralDoctor(d.docId || String(d.id)); toast.success('تم حذف الطبيب'); load() }
     catch { toast.error('حدث خطأ أثناء الحذف') }
   }
 

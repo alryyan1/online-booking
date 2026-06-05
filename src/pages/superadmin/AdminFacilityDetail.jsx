@@ -963,13 +963,143 @@ const UsersTab = ({ facilityId }) => {
   )
 }
 
+// ─── Doctors Tab ──────────────────────────────────────────────────────────────
+
+const DoctorsTab = ({ facilityId }) => {
+  const [allDoctors, setAllDoctors] = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [search, setSearch]         = useState('')
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      try {
+        const specs = await getSpecializations(facilityId)
+        const results = await Promise.all(
+          specs.map(async (spec) => {
+            const docs = await getDoctorsBySpec(facilityId, spec.id)
+            return docs.map((d) => ({ ...d, specName: spec.specName, specId: spec.id }))
+          })
+        )
+        setAllDoctors(results.flat())
+      } catch { toast.error('حدث خطأ أثناء تحميل الأطباء') }
+      setLoading(false)
+    }
+    load()
+  }, [facilityId])
+
+  const handleDelete = async (doc) => {
+    if (!window.confirm(`حذف "${doc.docName}"؟`)) return
+    try {
+      await deleteDoctorFromSpec(facilityId, doc.specId, doc.id)
+      setAllDoctors((prev) => prev.filter((d) => !(d.specId === doc.specId && d.id === doc.id)))
+      toast.success('تم حذف الطبيب')
+    } catch { toast.error('حدث خطأ أثناء الحذف') }
+  }
+
+  const filtered = search.trim()
+    ? allDoctors.filter((d) =>
+        d.docName?.toLowerCase().includes(search.toLowerCase()) ||
+        d.specName?.toLowerCase().includes(search.toLowerCase()) ||
+        String(d.centralDoctorId).includes(search)
+      )
+    : allDoctors
+
+  if (loading) return <Spinner size="lg" />
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-bold text-gray-900">أطباء المنشأة</p>
+          <p className="text-xs text-gray-400">{allDoctors.length} طبيب</p>
+        </div>
+        <div className="relative w-full sm:w-60">
+          <Search className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="بحث بالاسم أو التخصص أو الرقم..."
+            className={cn(inputCls, 'pr-8')} />
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center py-16 text-center rounded-xl border border-gray-100 bg-white">
+          <User className="mb-3 h-12 w-12 text-gray-200" />
+          <p className="text-sm text-gray-400">{search ? 'لا توجد نتائج' : 'لا يوجد أطباء بعد'}</p>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50 text-xs font-semibold text-gray-500">
+                  <th className="px-3 py-2.5 text-right">الطبيب</th>
+                  <th className="hidden px-3 py-2.5 text-right sm:table-cell">التخصص</th>
+                  <th className="hidden px-3 py-2.5 text-right md:table-cell">الهاتف</th>
+                  <th className="px-3 py-2.5 text-center">الحالة</th>
+                  <th className="px-3 py-2.5 text-center">الحجز</th>
+                  <th className="px-3 py-2.5 text-center"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filtered.map((doc) => (
+                  <tr key={`${doc.specId}-${doc.id}`} className="hover:bg-gray-50/50 transition">
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-gray-200 bg-blue-50 flex items-center justify-center">
+                          {doc.photoUrl
+                            ? <img src={doc.photoUrl} alt={doc.docName} className="h-full w-full object-cover" />
+                            : <User className="h-4 w-4 text-blue-400" />}
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-gray-900">{doc.docName}</p>
+                          {doc.centralDoctorId && <p className="text-[11px] text-blue-400 font-mono">#{doc.centralDoctorId}</p>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="hidden px-3 py-2 text-xs text-gray-500 sm:table-cell">{doc.specName}</td>
+                    <td className="hidden px-3 py-2 md:table-cell">
+                      <span className="text-xs text-gray-500" dir="ltr">{doc.phoneNumber || '—'}</span>
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-bold',
+                        doc.isActive !== false ? 'border-green-200 bg-green-50 text-green-700' : 'border-amber-200 bg-amber-50 text-amber-700')}>
+                        {doc.isActive !== false ? 'نشط' : 'معطل'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-bold',
+                        doc.isBookingEnabled ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-gray-200 bg-gray-50 text-gray-400')}>
+                        {doc.isBookingEnabled ? 'مفتوح' : 'مغلق'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <button
+                        onClick={() => handleDelete(doc)}
+                        className={cn(iconBtn, 'text-red-500 border-red-200 hover:bg-red-50')}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const TABS = [
   { key: 'specializations', label: 'التخصصات', icon: Stethoscope },
-  { key: 'appointments', label: 'المواعيد', icon: CalendarDays },
-  { key: 'insurance', label: 'التأمين', icon: Shield },
-  { key: 'users', label: 'المستخدمون', icon: Users },
+  { key: 'doctors',         label: 'الأطباء',   icon: User },
+  { key: 'appointments',    label: 'المواعيد',  icon: CalendarDays },
+  { key: 'insurance',       label: 'التأمين',   icon: Shield },
+  { key: 'users',           label: 'المستخدمون', icon: Users },
 ]
 
 export default function AdminFacilityDetail() {
@@ -1034,9 +1164,10 @@ export default function AdminFacilityDetail() {
       </div>
 
       {activeTab === 'specializations' && <SpecializationsTab facilityId={facilityId} />}
-      {activeTab === 'appointments' && <AppointmentsTab facilityId={facilityId} />}
-      {activeTab === 'insurance' && <InsuranceTab facilityId={facilityId} />}
-      {activeTab === 'users' && <UsersTab facilityId={facilityId} facilityName={facility.name} />}
+      {activeTab === 'doctors'         && <DoctorsTab facilityId={facilityId} />}
+      {activeTab === 'appointments'    && <AppointmentsTab facilityId={facilityId} />}
+      {activeTab === 'insurance'       && <InsuranceTab facilityId={facilityId} />}
+      {activeTab === 'users'           && <UsersTab facilityId={facilityId} facilityName={facility.name} />}
     </div>
   )
 }
