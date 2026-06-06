@@ -311,6 +311,7 @@ export default function CallCenterAppointments() {
 
                       <td className="text-center hidden sm:table-cell">
                         <p className="text-xs font-semibold text-gray-800 leading-tight">{apt.doctorName || '—'}</p>
+                        {apt.doctorId && <p className="text-[11px] text-blue-400 font-mono">#{apt.doctorId}</p>}
                         <p className="text-[11px] text-gray-400">{apt.specializationName || ''}</p>
                       </td>
 

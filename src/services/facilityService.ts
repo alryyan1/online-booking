@@ -4,6 +4,7 @@ import {
   getDocs,
   getDoc,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -225,11 +226,12 @@ export const getDoctorsBySpec = async (facilityId: string, specId: string): Prom
  * @param {Record<string, any>} data - The doctor's profile data.
  * @returns {Promise<any>}
  */
-export const addDoctorToSpec = (facilityId: string, specId: string, data: Record<string, any>): Promise<any> =>
-  addDoc(
-    collection(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.SPECIALIZATIONS, specId, COLLECTIONS.DOCTORS),
-    { ...data, createdAt: serverTimestamp() }
-  )
+export const addDoctorToSpec = (facilityId: string, specId: string, data: Record<string, any>): Promise<any> => {
+  const colRef = collection(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.SPECIALIZATIONS, specId, COLLECTIONS.DOCTORS)
+  const id = data.centralDoctorId ? String(data.centralDoctorId) : null
+  if (id) return setDoc(doc(colRef, id), { ...data, createdAt: serverTimestamp() })
+  return addDoc(colRef, { ...data, createdAt: serverTimestamp() })
+}
 
 /**
  * Updates an existing doctor's profile or schedule within a specialization.
