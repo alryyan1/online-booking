@@ -7,6 +7,7 @@ import {
   deleteSpecialization, getDoctorsBySpec, addDoctorToSpec, updateDoctorInSpec,
   deleteDoctorFromSpec, getInsuranceCompanies, createFacilityInsurance,
   updateFacilityInsurance, deleteFacilityInsurance,
+  getWhatsappSettings, updateWhatsappSettings,
 } from '../../services/facilityService'
 import { getAppointments, updateAppointmentStatus } from '../../services/appointmentService'
 import { sendSMS, sendCancelWhatsApp, buildCancelMessage } from '../../services/notificationService'
@@ -17,14 +18,15 @@ import { storage } from '../../services/firebase'
 import { getCentralDoctors } from '../../services/doctorService'
 import { getSpecialties as getCentralSpecialties } from '../../services/specialtyService'
 import { getInsuranceCompanies as getCentralInsurance } from '../../services/insuranceService'
-import { APPOINTMENT_STATUS } from '../../utils/constants'
+import { APPOINTMENT_STATUS, ROLES } from '../../utils/constants'
+import { useAuth } from '../../contexts/AuthContext'
 import Modal from '../../components/common/Modal'
 import Spinner from '../../components/common/Spinner'
 import { cn } from '../../lib/utils'
 import {
   Plus, Pencil, Trash2, Search, X, Users, Building2, Shield,
   CalendarDays, MapPin, Phone, ChevronDown, Sun, Moon, User,
-  Stethoscope, CheckCircle2, XCircle,
+  Stethoscope, CheckCircle2, XCircle, MessageCircle,
 } from 'lucide-react'
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
@@ -540,7 +542,7 @@ const AppointmentsTab = ({ facilityId }) => {
       if (apt) {
         Promise.all([
           sendSMS(apt.patientPhone, buildCancelMessage({ patientName: apt.patientName, doctorName: apt.doctorName, date: apt.date, shift: apt.period })),
-          sendCancelWhatsApp({ phone: apt.patientPhone, patientName: apt.patientName, doctorName: apt.doctorName, date: apt.date, shift: apt.period }),
+          sendCancelWhatsApp({ facilityId, phone: apt.patientPhone, patientName: apt.patientName, doctorName: apt.doctorName, date: apt.date, shift: apt.period }),
         ]).catch(console.error)
       }
       setAppointments(await getAppointments(facilityId))
@@ -1092,6 +1094,94 @@ const DoctorsTab = ({ facilityId }) => {
   )
 }
 
+// ─── WhatsApp Settings Tab (superadmin-only) ───────────────────────────────────
+
+const WA_SETTINGS_EMPTY = { phoneNumberId: '', accessToken: '', templateName: '', cancelTemplateName: '' }
+
+const WhatsappSettingsTab = ({ facilityId }) => {
+  const [form, setForm] = useState(WA_SETTINGS_EMPTY)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setLoading(true)
+    getWhatsappSettings(facilityId)
+      .then((data) => setForm({ ...WA_SETTINGS_EMPTY, ...data }))
+      .catch(() => toast.error('خطأ في تحميل إعدادات واتساب'))
+      .finally(() => setLoading(false))
+  }, [facilityId])
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      await updateWhatsappSettings(facilityId, form)
+      toast.success('تم حفظ إعدادات واتساب')
+    } catch {
+      toast.error('حدث خطأ أثناء الحفظ')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <Spinner size="lg" />
+
+  return (
+    <div className="max-w-lg rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <p className="mb-1 text-sm font-bold text-gray-900">إعدادات واتساب لهذا المركز</p>
+      <p className="mb-4 text-xs text-gray-400">
+        كل مركز يرسل رسائل الحجز والإلغاء من رقم واتساب بزنس وقالب رسالة خاصين به. لن يتم إرسال أي رسالة قبل تعبئة هذه البيانات.
+      </p>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <Field label="رقم الهاتف (Phone Number ID) *">
+          <input
+            value={form.phoneNumberId}
+            onChange={(e) => setForm((f) => ({ ...f, phoneNumberId: e.target.value }))}
+            dir="ltr"
+            required
+            placeholder="مثال: 123456789012345"
+            className={inputCls}
+          />
+        </Field>
+        <Field label="التوكن (Access Token) *">
+          <input
+            value={form.accessToken}
+            onChange={(e) => setForm((f) => ({ ...f, accessToken: e.target.value }))}
+            dir="ltr"
+            type="password"
+            required
+            placeholder="EAAG..."
+            className={inputCls}
+          />
+        </Field>
+        <Field label="اسم قالب تأكيد الحجز *">
+          <input
+            value={form.templateName}
+            onChange={(e) => setForm((f) => ({ ...f, templateName: e.target.value }))}
+            dir="ltr"
+            required
+            placeholder="booking"
+            className={inputCls}
+          />
+        </Field>
+        <Field label="اسم قالب الإلغاء *">
+          <input
+            value={form.cancelTemplateName}
+            onChange={(e) => setForm((f) => ({ ...f, cancelTemplateName: e.target.value }))}
+            dir="ltr"
+            required
+            placeholder="cancel_appointment"
+            className={inputCls}
+          />
+        </Field>
+        <button type="submit" disabled={saving} className={cn(btnPrimary, 'self-start')}>
+          {saving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+        </button>
+      </form>
+    </div>
+  )
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const TABS = [
@@ -1102,8 +1192,15 @@ const TABS = [
   { key: 'users',           label: 'المستخدمون', icon: Users },
 ]
 
+const SUPER_ADMIN_ONLY_TABS = [
+  { key: 'whatsapp', label: 'واتساب', icon: MessageCircle },
+]
+
 export default function AdminFacilityDetail() {
   const { facilityId } = useParams()
+  const { userRole } = useAuth()
+  const isSuperAdmin = userRole === ROLES.SUPER_ADMIN
+  const tabs = isSuperAdmin ? [...TABS, ...SUPER_ADMIN_ONLY_TABS] : TABS
   const [facility, setFacility] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('specializations')
@@ -1149,7 +1246,7 @@ export default function AdminFacilityDetail() {
 
       {/* Tabs */}
       <div className="mb-4 flex gap-1 overflow-x-auto border-b border-gray-200 pb-0">
-        {TABS.map(({ key, label, icon: Icon }) => (
+        {tabs.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
@@ -1168,6 +1265,7 @@ export default function AdminFacilityDetail() {
       {activeTab === 'appointments'    && <AppointmentsTab facilityId={facilityId} />}
       {activeTab === 'insurance'       && <InsuranceTab facilityId={facilityId} />}
       {activeTab === 'users'           && <UsersTab facilityId={facilityId} facilityName={facility.name} />}
+      {activeTab === 'whatsapp' && isSuperAdmin && <WhatsappSettingsTab facilityId={facilityId} />}
     </div>
   )
 }

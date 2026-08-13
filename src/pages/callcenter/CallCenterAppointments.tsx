@@ -117,6 +117,7 @@ export default function CallCenterAppointments() {
             shift: aptData.period,
           })),
           sendCancelWhatsApp({
+            facilityId,
             phone: aptData.patientPhone || '',
             patientName: aptData.patientName,
             doctorName: aptData.doctorName,

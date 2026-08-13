@@ -25,21 +25,25 @@ export const sendSMS = async (phone, message) => {
 
 /**
  * Sends a WhatsApp template message via the Cloud Function proxy.
+ * The Cloud Function resolves the WhatsApp number/token/template name to use
+ * from the facility's own WhatsApp settings (see facilityService.getWhatsappSettings).
  */
-export const sendWhatsApp = async ({ phone, patientName, doctorName, date, shift }) => {
+export const sendWhatsApp = async ({ facilityId, phone, patientName, doctorName, date, shift }) => {
   const label = getShiftLabel(shift)
   console.log(`[NotificationService] Triggering WhatsApp (Booking) to ${phone}...`)
   try {
     const res = await axios.post(`${API_BASE_URL}/whatsapp`, {
+      facilityId,
       phone,
-      template: 'booking',
+      type: 'booking',
       parameters: [patientName, doctorName, date, `(${label})`]
     })
     console.log(`[NotificationService] WhatsApp Success:`, res.data)
     return res.data
   } catch (err) {
-    console.error(`[NotificationService] WhatsApp Error:`, err.message)
-    return { ok: false, error: err.message }
+    const error = err.response?.data?.error || err.message
+    console.error(`[NotificationService] WhatsApp Error:`, error)
+    return { ok: false, error }
   }
 }
 
@@ -62,19 +66,21 @@ export const buildCancelMessage = ({ patientName, doctorName, date, shift }) => 
 /**
  * Sends a WhatsApp cancellation template message via the Cloud Function proxy.
  */
-export const sendCancelWhatsApp = async ({ phone, patientName, doctorName, date, shift }) => {
+export const sendCancelWhatsApp = async ({ facilityId, phone, patientName, doctorName, date, shift }) => {
   const label = getShiftLabel(shift)
   console.log(`[NotificationService] Triggering WhatsApp (Cancel) to ${phone}...`)
   try {
     const res = await axios.post(`${API_BASE_URL}/whatsapp`, {
+      facilityId,
       phone,
-      template: 'cancel_appointment',
+      type: 'cancel',
       parameters: [patientName, doctorName, date, label]
     })
     console.log(`[NotificationService] WhatsApp Cancel Success:`, res.data)
     return res.data
   } catch (err) {
-    console.error(`[NotificationService] WhatsApp Cancel Error:`, err.message)
-    return { ok: false, error: err.message }
+    const error = err.response?.data?.error || err.message
+    console.error(`[NotificationService] WhatsApp Cancel Error:`, error)
+    return { ok: false, error }
   }
 }

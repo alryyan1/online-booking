@@ -51,6 +51,7 @@ export const COLLECTIONS = {
   SPECIALIZATIONS: 'specializations',
   USERS: 'users',
   SLOTS: 'slots',
+  SETTINGS: 'settings',
 }
 
 export const TIME_SLOTS = [

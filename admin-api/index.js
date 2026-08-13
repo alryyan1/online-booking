@@ -81,20 +81,35 @@ app.post('/sms', async (req, res) => {
     }
 });
 
-// WhatsApp Proxy
+// WhatsApp Proxy — each facility has its own phone number / access token / template names,
+// stored at medicalFacilities/{facilityId}/settings/whatsapp so facility-admin reads of the
+// main facility doc never expose the access token.
 app.post('/whatsapp', async (req, res) => {
-    const { phone, template, parameters } = req.body;
-    console.log(`Sending WhatsApp to: ${phone}, Template: ${template}, Params:`, parameters);
+    const { facilityId, phone, type, parameters } = req.body;
+    if (!facilityId) return res.status(400).json({ error: 'facilityId is required' });
+
+    const settingsSnap = await admin.firestore()
+        .collection('medicalFacilities').doc(facilityId)
+        .collection('settings').doc('whatsapp')
+        .get();
+    const settings = settingsSnap.exists ? settingsSnap.data() : null;
+    const templateName = type === 'cancel' ? settings?.cancelTemplateName : settings?.templateName;
+
+    if (!settings?.phoneNumberId || !settings?.accessToken || !templateName) {
+        return res.status(400).json({ error: 'لم يتم تهيئة إعدادات واتساب لهذا المركز بعد' });
+    }
+
+    console.log(`Sending WhatsApp to: ${phone}, Facility: ${facilityId}, Template: ${templateName}, Params:`, parameters);
     try {
-        const waRes = await fetch(`https://graph.facebook.com/v25.0/${process.env.WA_PHONE_NUMBER_ID}/messages`, {
+        const waRes = await fetch(`https://graph.facebook.com/v25.0/${settings.phoneNumberId}/messages`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.WA_ACCESS_TOKEN}` },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${settings.accessToken}` },
             body: JSON.stringify({
                 messaging_product: 'whatsapp',
                 to: normalizePhone(phone),
                 type: 'template',
                 template: {
-                    name: template,
+                    name: templateName,
                     language: { code: 'ar' },
                     components: [{
                         type: 'body',
@@ -113,4 +128,4 @@ app.post('/whatsapp', async (req, res) => {
 });
 
 // تصدير الـ API
-exports.api = onRequest({ secrets: ['AIRTEL_SMS_API_KEY', 'WA_ACCESS_TOKEN', 'WA_PHONE_NUMBER_ID', 'WA_TEMPLATE_NAME', 'AIRTEL_SMS_SENDER'] }, app);
+exports.api = onRequest({ secrets: ['AIRTEL_SMS_API_KEY', 'AIRTEL_SMS_SENDER'] }, app);

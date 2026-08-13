@@ -65,6 +65,14 @@ export interface InsuranceCompany {
   [key: string]: any;
 }
 
+export interface WhatsappSettings {
+  phoneNumberId?: string;
+  accessToken?: string;
+  templateName?: string;
+  cancelTemplateName?: string;
+  [key: string]: any;
+}
+
 // ==========================================
 // Base References
 // ==========================================
@@ -317,3 +325,30 @@ export const updateFacilityInsurance = (facilityId: string, insId: string, data:
  */
 export const deleteFacilityInsurance = (facilityId: string, insId: string): Promise<void> =>
   deleteDoc(doc(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.INSURANCE, insId))
+
+// ==========================================
+// WhatsApp Settings (superadmin-only, kept out of the main facility doc
+// so facility-admin reads of getFacilityById never pull the access token)
+// ==========================================
+
+const whatsappSettingsDoc = (facilityId: string) =>
+  doc(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.SETTINGS, 'whatsapp')
+
+/**
+ * Retrieves the WhatsApp Business config (phone number, token, template names) for a facility.
+ * @param {string} facilityId - The parent facility ID.
+ * @returns {Promise<WhatsappSettings | null>}
+ */
+export const getWhatsappSettings = async (facilityId: string): Promise<WhatsappSettings | null> => {
+  const snap = await getDoc(whatsappSettingsDoc(facilityId))
+  return snap.exists() ? (snap.data() as WhatsappSettings) : null
+}
+
+/**
+ * Creates or updates the WhatsApp Business config for a facility.
+ * @param {string} facilityId - The parent facility ID.
+ * @param {WhatsappSettings} data - Fields to set.
+ * @returns {Promise<void>}
+ */
+export const updateWhatsappSettings = (facilityId: string, data: WhatsappSettings): Promise<void> =>
+  setDoc(whatsappSettingsDoc(facilityId), data, { merge: true })

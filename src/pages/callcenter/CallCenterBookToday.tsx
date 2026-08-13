@@ -159,8 +159,9 @@ const CallCenterBookToday = () => {
           date, 
           shift: period 
         })),
-        sendCancelWhatsApp({ 
-          phone, 
+        sendCancelWhatsApp({
+          facilityId,
+          phone,
           patientName: appt.patientName, 
           doctorName: listDoctor?.docName || '', 
           date, 
@@ -199,7 +200,7 @@ const CallCenterBookToday = () => {
       const phone = patientData.phone.trim()
       const [smsResult, waResult] = await Promise.all([
         sendSMS(phone, message),
-        sendWhatsApp({ phone, patientName: patientData.name.trim(), doctorName: selectedDoctor.docName, date: todayDate, shift: selectedShift.label }),
+        sendWhatsApp({ facilityId, phone, patientName: patientData.name.trim(), doctorName: selectedDoctor.docName, date: todayDate, shift: selectedShift.label }),
       ])
       if (smsResult.ok) toast.success('تم إرسال رسالة SMS')
       else toast.error(`فشل SMS: ${smsResult.error}`)
