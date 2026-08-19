@@ -518,7 +518,7 @@ const SpecializationsTab = ({ facilityId }) => {
 
 // ─── Appointments Tab ─────────────────────────────────────────────────────────
 
-const AppointmentsTab = ({ facilityId }) => {
+const AppointmentsTab = ({ facilityId, facilityName }) => {
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('today')
@@ -541,7 +541,7 @@ const AppointmentsTab = ({ facilityId }) => {
       toast.success('تم الإلغاء')
       if (apt) {
         Promise.all([
-          sendSMS(apt.patientPhone, buildCancelMessage({ patientName: apt.patientName, doctorName: apt.doctorName, date: apt.date, shift: apt.period })),
+          sendSMS(apt.patientPhone, buildCancelMessage({ patientName: apt.patientName, doctorName: apt.doctorName, date: apt.date, shift: apt.period, facilityName })),
           sendCancelWhatsApp({ facilityId, phone: apt.patientPhone, patientName: apt.patientName, doctorName: apt.doctorName, date: apt.date, shift: apt.period }),
         ]).catch(console.error)
       }
@@ -1262,7 +1262,7 @@ export default function AdminFacilityDetail() {
 
       {activeTab === 'specializations' && <SpecializationsTab facilityId={facilityId} />}
       {activeTab === 'doctors'         && <DoctorsTab facilityId={facilityId} />}
-      {activeTab === 'appointments'    && <AppointmentsTab facilityId={facilityId} />}
+      {activeTab === 'appointments'    && <AppointmentsTab facilityId={facilityId} facilityName={facility.name} />}
       {activeTab === 'insurance'       && <InsuranceTab facilityId={facilityId} />}
       {activeTab === 'users'           && <UsersTab facilityId={facilityId} facilityName={facility.name} />}
       {activeTab === 'whatsapp' && isSuperAdmin && <WhatsappSettingsTab facilityId={facilityId} />}

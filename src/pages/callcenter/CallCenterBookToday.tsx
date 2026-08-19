@@ -65,7 +65,7 @@ const timeAgo = (ts: any): string => {
 }
 
 const CallCenterBookToday = () => {
-  const { facilityId, currentUser } = useAuth() as any
+  const { facilityId, facilityName, currentUser } = useAuth() as any
   const [specialties, setSpecialties] = useState<Specialty[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [searchTerm, setSearchTerm] = useState<string>('')
@@ -153,11 +153,12 @@ const CallCenterBookToday = () => {
       console.log(`[UI] Triggering notifications for cancellation:`, { phone, patient: appt.patientName, period })
 
       const [smsResult, waResult] = await Promise.all([
-        sendSMS(phone, buildCancelMessage({ 
-          patientName: appt.patientName, 
-          doctorName: listDoctor?.docName || '', 
-          date, 
-          shift: period 
+        sendSMS(phone, buildCancelMessage({
+          patientName: appt.patientName,
+          doctorName: listDoctor?.docName || '',
+          date,
+          shift: period,
+          facilityName,
         })),
         sendCancelWhatsApp({
           facilityId,
@@ -196,6 +197,7 @@ const CallCenterBookToday = () => {
         patientName: patientData.name.trim(), doctorName: selectedDoctor.docName,
         specialtyName: selectedSpec.specName, date: todayDate,
         time: selectedShift.start, shift: selectedShift.label,
+        facilityName,
       })
       const phone = patientData.phone.trim()
       const [smsResult, waResult] = await Promise.all([

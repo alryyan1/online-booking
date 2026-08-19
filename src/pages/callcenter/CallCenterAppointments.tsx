@@ -50,7 +50,7 @@ const STATUS_MAP: Record<string, StatusMapEntry> = {
 const REALTIME_LIMIT = 150
 
 export default function CallCenterAppointments() {
-  const { facilityId } = useAuth() as { facilityId?: string }
+  const { facilityId, facilityName } = useAuth() as { facilityId?: string; facilityName?: string }
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [cancelingId, setCancelingId] = useState<string | null>(null)
@@ -115,6 +115,7 @@ export default function CallCenterAppointments() {
             doctorName: aptData.doctorName,
             date: aptData.date,
             shift: aptData.period,
+            facilityName,
           })),
           sendCancelWhatsApp({
             facilityId,

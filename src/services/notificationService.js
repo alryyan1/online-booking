@@ -50,17 +50,19 @@ export const sendWhatsApp = async ({ facilityId, phone, patientName, doctorName,
 /**
  * Builds the SMS booking confirmation message.
  */
-export const buildBookingMessage = ({ patientName, doctorName, specialtyName, date, time, shift }) => {
+export const buildBookingMessage = ({ patientName, doctorName, specialtyName, date, time, shift, facilityName }) => {
   const label = getShiftLabel(shift)
-  return `مرحباً ${patientName}، تم تأكيد حجزك لدى د. ${doctorName} (${specialtyName}) بتاريخ ${date} - ${label} الساعة ${time}.`
+  const center = facilityName || 'مركز الرومي الطبي'
+  return `مرحباً ${patientName}، تم تأكيد حجزك لدى د. ${doctorName} (${specialtyName}) بتاريخ ${date} - ${label} الساعة ${time}.\n\n${center}`
 }
 
 /**
  * Builds the SMS cancellation message.
  */
-export const buildCancelMessage = ({ patientName, doctorName, date, shift }) => {
+export const buildCancelMessage = ({ patientName, doctorName, date, shift, facilityName }) => {
   const label = getShiftLabel(shift)
-  return `عذرا ${patientName} ، تم الغاء حجزك مع دكتور ${doctorName} بتاريخ ${date} ${label} لظروف طارئة .\n\nمركز الرومي الطبي`
+  const center = facilityName || 'مركز الرومي الطبي'
+  return `عذرا ${patientName} ، تم الغاء حجزك مع دكتور ${doctorName} بتاريخ ${date} ${label} لظروف طارئة .\n\n${center}`
 }
 
 /**
