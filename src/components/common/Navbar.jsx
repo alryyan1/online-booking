@@ -22,7 +22,7 @@ const NAV_LINKS = [
   { label: 'الحجوزات',      to: '/callcenter/appointments',  icon: ClipboardList },
   { label: 'جدول الأطباء',  to: '/callcenter/schedule',      icon: CalendarDays },
   { label: 'الإحصائيات',   to: '/callcenter/statistics',    icon: BarChart2 },
-  { label: 'قائمة الفحوصات', to: '/lab/pricelist',           icon: FlaskConical },
+  { label: 'نتائج المختبر', to: '/lab/results',             icon: FlaskConical },
   { label: 'إدارة النظام',  to: '/superadmin',               icon: LayoutDashboard, role: 'superadmin' },
 ]
 

@@ -19,3 +19,20 @@ export const db = getFirestore(app)
 export const auth = getAuth(app)
 export const storage = getStorage(app)
 export const analytics = getAnalytics(app)
+
+// ── مشروع Firebase الثاني (Firestore فقط) ──
+export const secondaryFirebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE2_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE2_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE2_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE2_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE2_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE2_APP_ID,
+}
+
+// يُهيأ فقط إذا تم ضبط متغيرات البيئة، حتى لا يتعطل التطبيق بدونها
+export const secondaryApp = secondaryFirebaseConfig.projectId
+  ? initializeApp(secondaryFirebaseConfig, 'secondary')
+  : null
+export const db2 = secondaryApp ? getFirestore(secondaryApp) : null
+export const storage2 = secondaryApp ? getStorage(secondaryApp) : null

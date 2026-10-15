@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { getSpecializations, getDoctorsBySpec } from '../../services/facilityService'
+import { getSpecializations, getDoctorsBySpec, getFacilityById } from '../../services/facilityService'
 import { getBookedSlots, createCallCenterAppointment, updateAppointmentStatus } from '../../services/appointmentService'
 import { sendSMS, sendWhatsApp, sendCancelWhatsApp, buildBookingMessage, buildCancelMessage } from '../../services/notificationService'
 import { getWorkingShifts, getDayName, formatDate, categorizeSlotsByShift } from '../../utils/bookingUtils'
@@ -34,6 +34,7 @@ interface Specialty {
 
 interface Appointment {
   id: string;
+  bookingNumber?: number;
   patientName?: string;
   patientPhone?: string;
   date?: string;
@@ -96,12 +97,10 @@ const CallCenterBookToday = () => {
     setLoading(true)
     try {
       const allSpecs = await getSpecializations(facilityId)
-      const activeSpecs = allSpecs.filter((s: any) => s.isActive !== false)
       const specData = await Promise.all(
-        activeSpecs.map(async (spec: any) => {
+        allSpecs.map(async (spec: any) => {
           const doctors = await getDoctorsBySpec(facilityId, spec.id)
           const workingToday = doctors
-            .filter((d: any) => d.isActive !== false && d.isBookingEnabled !== false)
             .filter((d: any) => getWorkingShifts(d, today) !== null)
           return { ...spec, doctors: workingToday }
         })
@@ -114,6 +113,12 @@ const CallCenterBookToday = () => {
   }
 
   useEffect(() => { loadData() }, [facilityId])
+
+  const [centerPhone, setCenterPhone] = useState<string>('')
+  useEffect(() => {
+    if (!facilityId) return
+    getFacilityById(facilityId).then((f: any) => setCenterPhone(f?.phone || '')).catch(console.error)
+  }, [facilityId])
 
   const fetchDoctorCounts = async (doctor: Doctor) => {
     if (bookedCounts[doctor.id]) return
@@ -143,7 +148,7 @@ const CallCenterBookToday = () => {
   const handleCancelAppointment = async (appt: Appointment) => {
     setCancelingId(appt.id)
     try {
-      await updateAppointmentStatus(facilityId, appt.id, APPOINTMENT_STATUS.CANCELED)
+      await updateAppointmentStatus(facilityId, appt.id, APPOINTMENT_STATUS.CANCELED, currentUser)
       setListAppointments((prev) => prev.filter((a) => a.id !== appt.id))
       toast.success('تم إلغاء الحجز')
       const phone = appt.patientPhone || ''
@@ -184,7 +189,7 @@ const CallCenterBookToday = () => {
     
     setIsBooking(true)
     try {
-      await createCallCenterAppointment(facilityId, {
+      const { bookingNumber } = await createCallCenterAppointment(facilityId, {
         centralSpecialtyId: selectedSpec.id, specializationName: selectedSpec.specName,
         doctorId: selectedDoctor.id, doctorName: selectedDoctor.docName, facilityId,
         date: todayDate, period: selectedShift.type, time: selectedShift.start,
@@ -192,17 +197,26 @@ const CallCenterBookToday = () => {
         createdById: currentUser?.uid || null,
         createdByName: currentUser?.displayName || currentUser?.email || 'Unknown',
       })
-      toast.success('تم حجز الموعد بنجاح')
+      toast.success(`تم حجز الموعد بنجاح — كود الحجز ${bookingNumber}`)
       const message = buildBookingMessage({
-        patientName: patientData.name.trim(), doctorName: selectedDoctor.docName,
-        specialtyName: selectedSpec.specName, date: todayDate,
-        time: selectedShift.start, shift: selectedShift.label,
         facilityName,
+        patientName: patientData.name.trim(), patientPhone: patientData.phone.trim(),
+        doctorName: selectedDoctor.docName, specializationName: selectedSpec.specName,
+        date: todayDate, shift: selectedShift.type,
+        centerPhone,
       })
       const phone = patientData.phone.trim()
       const [smsResult, waResult] = await Promise.all([
         sendSMS(phone, message),
-        sendWhatsApp({ facilityId, phone, patientName: patientData.name.trim(), doctorName: selectedDoctor.docName, date: todayDate, shift: selectedShift.label }),
+        sendWhatsApp({
+          facilityId, phone,
+          patientName: patientData.name.trim(),
+          doctorName: selectedDoctor.docName,
+          specializationName: selectedSpec.specName,
+          dayName: todayDayName,
+          date: todayDate,
+          shift: selectedShift.type,
+        }),
       ])
       if (smsResult.ok) toast.success('تم إرسال رسالة SMS')
       else toast.error(`فشل SMS: ${smsResult.error}`)
@@ -580,7 +594,12 @@ const CallCenterBookToday = () => {
                         return (
                           <tr key={appt.id} className="hover:bg-gray-50 transition-colors">
                             <td className="px-2 py-1.5 text-gray-300 font-bold text-center">{sectionAppts.length - idx}</td>
-                            <td className="px-2 py-1.5 font-bold text-gray-900 whitespace-nowrap text-center">{appt.patientName}</td>
+                            <td className="px-2 py-1.5 whitespace-nowrap text-center">
+                              <p className="font-bold text-gray-900">{appt.patientName}</p>
+                              {appt.bookingNumber != null && (
+                                <p className="text-[11px] text-blue-600 font-mono">كود: {appt.bookingNumber}</p>
+                              )}
+                            </td>
                             <td className="px-2 py-1.5 text-blue-600 whitespace-nowrap text-center" dir="ltr">{appt.patientPhone || '—'}</td>
                      
                             <td className="px-2 py-1.5 text-center text-gray-500 whitespace-nowrap" dir="ltr">

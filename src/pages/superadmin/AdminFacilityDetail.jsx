@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { formatDate } from '../../utils/bookingUtils'
 import {
   getFacilityById, getSpecializations, createSpecialization, updateSpecialization,
   deleteSpecialization, getDoctorsBySpec, addDoctorToSpec, updateDoctorInSpec,
   deleteDoctorFromSpec, getInsuranceCompanies, createFacilityInsurance,
-  updateFacilityInsurance, deleteFacilityInsurance,
-  getWhatsappSettings, updateWhatsappSettings,
+  updateFacilityInsurance, deleteFacilityInsurance, updateFacility,
 } from '../../services/facilityService'
 import { getAppointments, updateAppointmentStatus } from '../../services/appointmentService'
 import { sendSMS, sendCancelWhatsApp, buildCancelMessage } from '../../services/notificationService'
@@ -18,7 +17,7 @@ import { storage } from '../../services/firebase'
 import { getCentralDoctors } from '../../services/doctorService'
 import { getSpecialties as getCentralSpecialties } from '../../services/specialtyService'
 import { getInsuranceCompanies as getCentralInsurance } from '../../services/insuranceService'
-import { APPOINTMENT_STATUS, ROLES } from '../../utils/constants'
+import { APPOINTMENT_STATUS } from '../../utils/constants'
 import { useAuth } from '../../contexts/AuthContext'
 import Modal from '../../components/common/Modal'
 import Spinner from '../../components/common/Spinner'
@@ -26,7 +25,7 @@ import { cn } from '../../lib/utils'
 import {
   Plus, Pencil, Trash2, Search, X, Users, Building2, Shield,
   CalendarDays, MapPin, Phone, ChevronDown, Sun, Moon, User,
-  Stethoscope, CheckCircle2, XCircle, MessageCircle,
+  Stethoscope, CheckCircle2, XCircle, Settings, Save,
 } from 'lucide-react'
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
@@ -519,6 +518,7 @@ const SpecializationsTab = ({ facilityId }) => {
 // ─── Appointments Tab ─────────────────────────────────────────────────────────
 
 const AppointmentsTab = ({ facilityId, facilityName }) => {
+  const { currentUser } = useAuth()
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('today')
@@ -537,7 +537,7 @@ const AppointmentsTab = ({ facilityId, facilityName }) => {
     const apt = appointments.find((a) => a.id === id)
     setLoading(true)
     try {
-      await updateAppointmentStatus(facilityId, id, APPOINTMENT_STATUS.CANCELED)
+      await updateAppointmentStatus(facilityId, id, APPOINTMENT_STATUS.CANCELED, currentUser)
       toast.success('تم الإلغاء')
       if (apt) {
         Promise.all([
@@ -1094,91 +1094,42 @@ const DoctorsTab = ({ facilityId }) => {
   )
 }
 
-// ─── WhatsApp Settings Tab (superadmin-only) ───────────────────────────────────
+// ─── Settings Tab ─────────────────────────────────────────────────────────────
 
-const WA_SETTINGS_EMPTY = { phoneNumberId: '', accessToken: '', templateName: '', cancelTemplateName: '' }
-
-const WhatsappSettingsTab = ({ facilityId }) => {
-  const [form, setForm] = useState(WA_SETTINGS_EMPTY)
-  const [loading, setLoading] = useState(true)
+const SettingsTab = ({ facility, onSaved }) => {
+  const [targetCollection, setTargetCollection] = useState(facility.targetCollection || '')
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    setLoading(true)
-    getWhatsappSettings(facilityId)
-      .then((data) => setForm({ ...WA_SETTINGS_EMPTY, ...data }))
-      .catch(() => toast.error('خطأ في تحميل إعدادات واتساب'))
-      .finally(() => setLoading(false))
-  }, [facilityId])
-
-  const handleSubmit = async (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
     setSaving(true)
     try {
-      await updateWhatsappSettings(facilityId, form)
-      toast.success('تم حفظ إعدادات واتساب')
-    } catch {
-      toast.error('حدث خطأ أثناء الحفظ')
-    } finally {
-      setSaving(false)
-    }
+      const data = { targetCollection: targetCollection.trim() }
+      await updateFacility(facility.id, data)
+      onSaved(data)
+      toast.success('تم حفظ الإعدادات')
+    } catch { toast.error('حدث خطأ أثناء الحفظ') }
+    finally { setSaving(false) }
   }
 
-  if (loading) return <Spinner size="lg" />
-
   return (
-    <div className="max-w-lg rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <p className="mb-1 text-sm font-bold text-gray-900">إعدادات واتساب لهذا المركز</p>
-      <p className="mb-4 text-xs text-gray-400">
-        كل مركز يرسل رسائل الحجز والإلغاء من رقم واتساب بزنس وقالب رسالة خاصين به. لن يتم إرسال أي رسالة قبل تعبئة هذه البيانات.
-      </p>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <Field label="رقم الهاتف (Phone Number ID) *">
-          <input
-            value={form.phoneNumberId}
-            onChange={(e) => setForm((f) => ({ ...f, phoneNumberId: e.target.value }))}
-            dir="ltr"
-            required
-            placeholder="مثال: 123456789012345"
-            className={inputCls}
-          />
-        </Field>
-        <Field label="التوكن (Access Token) *">
-          <input
-            value={form.accessToken}
-            onChange={(e) => setForm((f) => ({ ...f, accessToken: e.target.value }))}
-            dir="ltr"
-            type="password"
-            required
-            placeholder="EAAG..."
-            className={inputCls}
-          />
-        </Field>
-        <Field label="اسم قالب تأكيد الحجز *">
-          <input
-            value={form.templateName}
-            onChange={(e) => setForm((f) => ({ ...f, templateName: e.target.value }))}
-            dir="ltr"
-            required
-            placeholder="booking"
-            className={inputCls}
-          />
-        </Field>
-        <Field label="اسم قالب الإلغاء *">
-          <input
-            value={form.cancelTemplateName}
-            onChange={(e) => setForm((f) => ({ ...f, cancelTemplateName: e.target.value }))}
-            dir="ltr"
-            required
-            placeholder="cancel_appointment"
-            className={inputCls}
-          />
-        </Field>
-        <button type="submit" disabled={saving} className={cn(btnPrimary, 'self-start')}>
-          {saving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+    <form onSubmit={handleSave} className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <h2 className="text-sm font-bold text-gray-900">نتائج المختبر</h2>
+      <Field label="اسم مجموعة النتائج (Collection) في مشروع sales-9e9b8">
+        <input
+          value={targetCollection}
+          onChange={(e) => setTargetCollection(e.target.value)}
+          dir="ltr"
+          className={inputCls}
+        />
+      </Field>
+      <p className="text-xs text-gray-400" dir="ltr">/{targetCollection.trim() || 'collection'}/{'{receipt_no}'}</p>
+      <div>
+        <button type="submit" disabled={saving} className={btnPrimary}>
+          <Save className="h-3.5 w-3.5" />{saving ? 'جاري الحفظ...' : 'حفظ'}
         </button>
-      </form>
-    </div>
+      </div>
+    </form>
   )
 }
 
@@ -1190,20 +1141,17 @@ const TABS = [
   { key: 'appointments',    label: 'المواعيد',  icon: CalendarDays },
   { key: 'insurance',       label: 'التأمين',   icon: Shield },
   { key: 'users',           label: 'المستخدمون', icon: Users },
-]
-
-const SUPER_ADMIN_ONLY_TABS = [
-  { key: 'whatsapp', label: 'واتساب', icon: MessageCircle },
+  { key: 'settings',        label: 'الإعدادات', icon: Settings },
 ]
 
 export default function AdminFacilityDetail() {
   const { facilityId } = useParams()
-  const { userRole } = useAuth()
-  const isSuperAdmin = userRole === ROLES.SUPER_ADMIN
-  const tabs = isSuperAdmin ? [...TABS, ...SUPER_ADMIN_ONLY_TABS] : TABS
+  const tabs = TABS
   const [facility, setFacility] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('specializations')
+  const [searchParams] = useSearchParams()
+  const initialTab = searchParams.get('tab')
+  const [activeTab, setActiveTab] = useState(TABS.some((t) => t.key === initialTab) ? initialTab : 'specializations')
 
   useEffect(() => {
     getFacilityById(facilityId).then(setFacility).catch(() => toast.error('خطأ')).finally(() => setLoading(false))
@@ -1265,7 +1213,7 @@ export default function AdminFacilityDetail() {
       {activeTab === 'appointments'    && <AppointmentsTab facilityId={facilityId} facilityName={facility.name} />}
       {activeTab === 'insurance'       && <InsuranceTab facilityId={facilityId} />}
       {activeTab === 'users'           && <UsersTab facilityId={facilityId} facilityName={facility.name} />}
-      {activeTab === 'whatsapp' && isSuperAdmin && <WhatsappSettingsTab facilityId={facilityId} />}
+      {activeTab === 'settings'        && <SettingsTab facility={facility} onSaved={(data) => setFacility((f) => ({ ...f, ...data }))} />}
     </div>
   )
 }

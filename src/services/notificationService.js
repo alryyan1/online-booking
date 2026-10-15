@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getDayName } from '../utils/bookingUtils'
 
 const API_BASE_URL = 'https://api-4ef7za53za-uc.a.run.app'
 
@@ -25,18 +26,23 @@ export const sendSMS = async (phone, message) => {
 
 /**
  * Sends a WhatsApp template message via the Cloud Function proxy.
- * The Cloud Function resolves the WhatsApp number/token/template name to use
- * from the facility's own WhatsApp settings (see facilityService.getWhatsappSettings).
+ * All facilities send from one shared WhatsApp number (template: booking_message).
+ * The Cloud Function adds the facility name and phone from the facility doc.
  */
-export const sendWhatsApp = async ({ facilityId, phone, patientName, doctorName, date, shift }) => {
-  const label = getShiftLabel(shift)
+export const sendWhatsApp = async ({ facilityId, phone, patientName, doctorName, specializationName, dayName, date, shift }) => {
   console.log(`[NotificationService] Triggering WhatsApp (Booking) to ${phone}...`)
   try {
     const res = await axios.post(`${API_BASE_URL}/whatsapp`, {
       facilityId,
       phone,
       type: 'booking',
-      parameters: [patientName, doctorName, date, `(${label})`]
+      patientName,
+      patientPhone: phone,
+      doctorName,
+      specializationName,
+      dayName,
+      date,
+      period: getShiftLabel(shift),
     })
     console.log(`[NotificationService] WhatsApp Success:`, res.data)
     return res.data
@@ -50,10 +56,21 @@ export const sendWhatsApp = async ({ facilityId, phone, patientName, doctorName,
 /**
  * Builds the SMS booking confirmation message.
  */
-export const buildBookingMessage = ({ patientName, doctorName, specialtyName, date, time, shift, facilityName }) => {
+export const buildBookingMessage = ({ facilityName, patientName, patientPhone, doctorName, specializationName, date, shift, centerPhone }) => {
   const label = getShiftLabel(shift)
-  const center = facilityName || 'مركز الرومي الطبي'
-  return `مرحباً ${patientName}، تم تأكيد حجزك لدى د. ${doctorName} (${specialtyName}) بتاريخ ${date} - ${label} الساعة ${time}.\n\n${center}`
+  const dayName = date ? getDayName(new Date(`${date}T00:00:00`)) : ''
+  const doctor = specializationName ? `${doctorName || ''} (${specializationName})` : (doctorName || '')
+  return [
+    'تم حجز موعد بنجاح',
+    '',
+    `اسم المركز: ${facilityName || ''}`,
+    `اسم المريض: ${patientName || ''}`,
+    `رقم الهاتف: ${patientPhone || ''}`,
+    `الطبيب: ${doctor}`,
+    `وقت الحجز: ${[dayName, date, label].filter(Boolean).join(' - ')}`,
+    '',
+    `للإستفسار يمكنك التواصل مع المركز على الرقم: ${centerPhone || ''}`,
+  ].join('\n')
 }
 
 /**
@@ -69,14 +86,16 @@ export const buildCancelMessage = ({ patientName, doctorName, date, shift, facil
  * Sends a WhatsApp cancellation template message via the Cloud Function proxy.
  */
 export const sendCancelWhatsApp = async ({ facilityId, phone, patientName, doctorName, date, shift }) => {
-  const label = getShiftLabel(shift)
   console.log(`[NotificationService] Triggering WhatsApp (Cancel) to ${phone}...`)
   try {
     const res = await axios.post(`${API_BASE_URL}/whatsapp`, {
       facilityId,
       phone,
       type: 'cancel',
-      parameters: [patientName, doctorName, date, label]
+      patientName,
+      doctorName,
+      date,
+      period: getShiftLabel(shift),
     })
     console.log(`[NotificationService] WhatsApp Cancel Success:`, res.data)
     return res.data

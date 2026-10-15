@@ -2,7 +2,6 @@ import {
   collection,
   doc,
   getDocs,
-  addDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -11,6 +10,7 @@ import {
   limit,
   startAfter,
   runTransaction,
+  writeBatch,
   serverTimestamp,
   getDoc,
 } from 'firebase/firestore'
@@ -108,12 +108,27 @@ export const bookAppointment = async (facilityId, appointmentData) => {
   })
 }
 
-export const updateAppointmentStatus = async (facilityId, appointmentId, status) => {
+export const updateAppointmentStatus = async (facilityId, appointmentId, status, user = null) => {
   const apptRef = doc(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.APPOINTMENTS, appointmentId)
   const apptSnap = await getDoc(apptRef)
-  await updateDoc(apptRef, { status })
+  const updateData = { status }
+  if (status === APPOINTMENT_STATUS.CANCELED) {
+    updateData.canceledAt = serverTimestamp()
+    updateData.canceledById = user?.uid || ''
+    updateData.canceledByName = user?.displayName || user?.email || 'مستخدم غير معروف'
+  }
+  await updateDoc(apptRef, updateData)
   if (apptSnap.exists()) {
     const data = apptSnap.data()
+    if (data.centralSpecialtyId && data.doctorId) {
+      const doctorAppRef = doc(
+        db, COLLECTIONS.FACILITIES, facilityId,
+        COLLECTIONS.SPECIALIZATIONS, data.centralSpecialtyId,
+        COLLECTIONS.DOCTORS, data.doctorId,
+        COLLECTIONS.APPOINTMENTS, appointmentId
+      )
+      try { await updateDoc(doctorAppRef, updateData) } catch { }
+    }
     const timeVal = data.timeSlot || data.time
     if (data.doctorId && data.date && timeVal && typeof timeVal === 'string') {
       const slotId = `${data.doctorId}_${data.date}_${timeVal.replace(':', '-')}`
@@ -123,7 +138,35 @@ export const updateAppointmentStatus = async (facilityId, appointmentId, status)
   }
 }
 
-export const deleteAppointment = (facilityId, appointmentId) =>
+// تأكيد حجز (نسخة المرفق + نسخة الطبيب) مثل التطبيق
+export const confirmAppointment = async (facilityId, appointment, user) => {
+  const specializationId = appointment.centralSpecialtyId || appointment.specializationId
+  if (!specializationId) throw new Error('معرف التخصص غير موجود')
+  if (!appointment.doctorId) throw new Error('معرف الطبيب غير موجود')
+
+  const facilityBookingRef = doc(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.APPOINTMENTS, appointment.id)
+  const doctorBookingRef = doc(
+    db, COLLECTIONS.FACILITIES, facilityId,
+    COLLECTIONS.SPECIALIZATIONS, specializationId,
+    COLLECTIONS.DOCTORS, appointment.doctorId,
+    COLLECTIONS.APPOINTMENTS, appointment.id
+  )
+
+  const updateData = {
+    isConfirmed: true,
+    status: APPOINTMENT_STATUS.CONFIRMED,
+    confirmedAt: serverTimestamp(),
+    confirmedByName: user?.displayName || user?.email || 'مستخدم غير معروف',
+    confirmedById: user?.uid || '',
+  }
+
+  const batch = writeBatch(db)
+  batch.update(facilityBookingRef, updateData)
+  batch.update(doctorBookingRef, updateData)
+  await batch.commit()
+}
+
+export const deleteAppointment =(facilityId, appointmentId) =>
   deleteDoc(doc(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.APPOINTMENTS, appointmentId))
 
 export const createCallCenterAppointment = async (facilityId, data) => {
@@ -135,21 +178,40 @@ export const createCallCenterAppointment = async (facilityId, data) => {
     phone = '249' + phone;
   }
 
-  // 2. حفظ الموعد في Firestore أولاً
-  const appointmentDoc = {
-    ...data,
-    patientPhone: phone,
-    status: APPOINTMENT_STATUS.PENDING,
-    isConfirmed: false,
-    patientId: null,
-    createdAt: serverTimestamp(),
-  };
+  // 2. نفس مسارات التطبيق: نسخة عند الطبيب ونسخة عند المرفق بنفس الـ id
+  const doctorAppRef = doc(collection(
+    db, COLLECTIONS.FACILITIES, facilityId,
+    COLLECTIONS.SPECIALIZATIONS, data.centralSpecialtyId,
+    COLLECTIONS.DOCTORS, data.doctorId,
+    COLLECTIONS.APPOINTMENTS
+  ));
+  const facilityAppRef = doc(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.APPOINTMENTS, doctorAppRef.id);
+  const counterRef = doc(db, COLLECTIONS.FACILITIES, facilityId, 'counters', 'appointments');
 
-  const docRef = await addDoc(
-    collection(db, COLLECTIONS.FACILITIES, facilityId, COLLECTIONS.APPOINTMENTS),
-    appointmentDoc
-  );
+  // 3. Transaction لتوليد رقم الحجز التسلسلي وتجنب التضارب
+  const bookingNumber = await runTransaction(db, async (transaction) => {
+    const counterSnap = await transaction.get(counterRef);
+    const nextNumber = (counterSnap.exists() ? counterSnap.data().lastBookingNumber || 0 : 0) + 1;
 
-  return docRef;
+    transaction.set(counterRef, { lastBookingNumber: nextNumber }, { merge: true });
+
+    const appointmentDoc = {
+      ...data,
+      bookingNumber: nextNumber,
+      patientPhone: phone,
+      status: APPOINTMENT_STATUS.CONFIRMED,
+      isConfirmed: true,
+      confirmedAt: serverTimestamp(),
+      confirmedById: data.createdById || '',
+      confirmedByName: data.createdByName || '',
+      patientId: null,
+      createdAt: serverTimestamp(),
+    };
+    transaction.set(doctorAppRef, appointmentDoc);
+    transaction.set(facilityAppRef, appointmentDoc);
+    return nextNumber;
+  });
+
+  return { id: facilityAppRef.id, bookingNumber };
 }
 

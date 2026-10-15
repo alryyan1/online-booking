@@ -2,9 +2,10 @@ import { useEffect, useState, useRef } from 'react'
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
 import { db } from '../../services/firebase'
 import { useAuth } from '../../contexts/AuthContext'
-import { getSpecializations, getDoctorsBySpec } from '../../services/facilityService'
+import { getSpecializations, getDoctorsBySpec, getFacilityById } from '../../services/facilityService'
 import { getBookedSlots, createCallCenterAppointment } from '../../services/appointmentService'
-import { getAvailableBookingDays, categorizeSlotsByShift } from '../../utils/bookingUtils'
+import { sendSMS, sendWhatsApp, buildBookingMessage } from '../../services/notificationService'
+import { getAvailableBookingDays, categorizeSlotsByShift, getDayName } from '../../utils/bookingUtils'
 import { APPOINTMENT_STATUS, COLLECTIONS } from '../../utils/constants'
 import { Search, X, Stethoscope, CalendarDays, Sun, Moon, Phone } from 'lucide-react'
 import ZoomableAvatar from '../../components/common/ZoomableAvatar'
@@ -27,7 +28,13 @@ import { cn } from '../../lib/utils'
 import toast from 'react-hot-toast'
 
 export default function CallCenterBookNow() {
-  const { facilityId, currentUser } = useAuth()
+  const { facilityId, facilityName, currentUser } = useAuth()
+  const [centerPhone, setCenterPhone] = useState('')
+
+  useEffect(() => {
+    if (!facilityId) return
+    getFacilityById(facilityId).then((f) => setCenterPhone(f?.phone || '')).catch(console.error)
+  }, [facilityId])
   const [specialties, setSpecialties] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -62,13 +69,11 @@ export default function CallCenterBookNow() {
     setLoading(true)
     try {
       const allSpecs = await getSpecializations(facilityId)
-      const activeSpecs = allSpecs.filter((s) => s.isActive !== false)
       const initialDateMap = {}
       const specData = await Promise.all(
-        activeSpecs.map(async (spec) => {
+        allSpecs.map(async (spec) => {
           const doctors = await getDoctorsBySpec(facilityId, spec.id)
           const availableDocs = doctors
-            .filter((d) => d.isActive !== false && d.isBookingEnabled !== false)
             .map((d) => {
               const availableDays = getAvailableBookingDays(d)
               const earliest = availableDays.length > 0 ? availableDays[0] : null
@@ -184,7 +189,7 @@ export default function CallCenterBookNow() {
     if (!patientData.name.trim() || !patientData.phone.trim()) { toast.error('يرجى إدخال اسم المريض ورقم الهاتف'); return }
     setIsBooking(true)
     try {
-      await createCallCenterAppointment(facilityId, {
+      const { bookingNumber } = await createCallCenterAppointment(facilityId, {
         centralSpecialtyId: selectedSpec.id, specializationName: selectedSpec.specName,
         doctorId: selectedDoctor.id, doctorName: selectedDoctor.docName, facilityId,
         date: selectedDayRender.date, period: selectedShift.type, time: selectedShift.start,
@@ -192,7 +197,33 @@ export default function CallCenterBookNow() {
         createdById: currentUser?.uid || null,
         createdByName: currentUser?.displayName || currentUser?.email || 'Unknown',
       })
-      toast.success('تم حجز الموعد بنجاح')
+      toast.success(`تم حجز الموعد بنجاح — كود الحجز ${bookingNumber}`)
+
+      const phone = patientData.phone.trim()
+      const message = buildBookingMessage({
+        facilityName,
+        patientName: patientData.name.trim(), patientPhone: phone,
+        doctorName: selectedDoctor.docName, specializationName: selectedSpec.specName,
+        date: selectedDayRender.date, shift: selectedShift.type,
+        centerPhone,
+      })
+      const [smsResult, waResult] = await Promise.all([
+        sendSMS(phone, message),
+        sendWhatsApp({
+          facilityId, phone,
+          patientName: patientData.name.trim(),
+          doctorName: selectedDoctor.docName,
+          specializationName: selectedSpec.specName,
+          dayName: getDayName(new Date(`${selectedDayRender.date}T00:00:00`)),
+          date: selectedDayRender.date,
+          shift: selectedShift.type,
+        }),
+      ])
+      if (smsResult.ok) toast.success('تم إرسال رسالة SMS')
+      else toast.error(`فشل SMS: ${smsResult.error}`)
+      if (waResult.ok) toast.success('تم إرسال رسالة واتساب')
+      else toast.error(`فشل واتساب: ${waResult.error}`)
+
       const key = `${selectedDoctor.id}_${selectedDayRender.date}`
       const slots = await getBookedSlots(facilityId, selectedDoctor.id, selectedDayRender.date)
       const counts = categorizeSlotsByShift(slots, selectedDoctor.workingSchedule?.[selectedDayRender.dayName])

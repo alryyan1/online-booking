@@ -2,17 +2,19 @@ import { useEffect, useState, useRef } from 'react'
 import { collection, query, orderBy, limit, onSnapshot, QuerySnapshot, DocumentData, Timestamp } from 'firebase/firestore'
 import { db } from '../../services/firebase'
 import { useAuth } from '../../contexts/AuthContext'
-import { updateAppointmentStatus } from '../../services/appointmentService'
-import { sendSMS, sendCancelWhatsApp, buildCancelMessage } from '../../services/notificationService'
-import { formatDate } from '../../utils/bookingUtils'
+import { updateAppointmentStatus, confirmAppointment } from '../../services/appointmentService'
+import { sendSMS, sendWhatsApp, sendCancelWhatsApp, buildBookingMessage, buildCancelMessage } from '../../services/notificationService'
+import { getFacilityById } from '../../services/facilityService'
+import { formatDate, getDayName } from '../../utils/bookingUtils'
 import { APPOINTMENT_STATUS, COLLECTIONS } from '../../utils/constants'
-import { Sun, Moon, Ban, Search, X, CalendarDays, Phone, Stethoscope } from 'lucide-react'
+import { Sun, Moon, Ban, Check, Search, X, CalendarDays, Phone, Stethoscope } from 'lucide-react'
 import Spinner from '../../components/common/Spinner'
 import toast from 'react-hot-toast'
 import { cn } from '../../lib/utils'
 
 export interface Appointment {
   id: string;
+  bookingNumber?: number;
   patientName?: string;
   patientPhone?: string;
   doctorName?: string;
@@ -50,10 +52,12 @@ const STATUS_MAP: Record<string, StatusMapEntry> = {
 const REALTIME_LIMIT = 150
 
 export default function CallCenterAppointments() {
-  const { facilityId, facilityName } = useAuth() as { facilityId?: string; facilityName?: string }
+  const { facilityId, facilityName, currentUser } = useAuth() as { facilityId?: string; facilityName?: string; currentUser?: any }
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [cancelingId, setCancelingId] = useState<string | null>(null)
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const [centerPhone, setCenterPhone] = useState<string>('')
   const [activeTab, setActiveTab] = useState<string>('today')
   const [patientSearch, setPatientSearch] = useState<string>('')
   const [doctorSearch, setDoctorSearch] = useState<string>('')
@@ -62,6 +66,11 @@ export default function CallCenterAppointments() {
   const initializedRef = useRef<boolean>(false)
 
   const todayStr = formatDate(new Date())
+
+  useEffect(() => {
+    if (!facilityId) return
+    getFacilityById(facilityId).then((f: any) => setCenterPhone(f?.phone || '')).catch(console.error)
+  }, [facilityId])
 
   useEffect(() => {
     if (!facilityId) { setLoading(false); return }
@@ -105,7 +114,7 @@ export default function CallCenterAppointments() {
     setCancelingId(id)
     try {
       if (facilityId) {
-        await updateAppointmentStatus(facilityId, id, APPOINTMENT_STATUS.CANCELED)
+        await updateAppointmentStatus(facilityId, id, APPOINTMENT_STATUS.CANCELED, currentUser)
       }
       toast.success('تم إلغاء الحجز')
       if (aptData) {
@@ -135,13 +144,57 @@ export default function CallCenterAppointments() {
     }
   }
 
+  const handleConfirm = async (apt: Appointment) => {
+    if (!facilityId) return
+    if (!window.confirm('هل تريد تأكيد هذا الحجز؟')) return
+    setConfirmingId(apt.id)
+    try {
+      await confirmAppointment(facilityId, apt, currentUser)
+      toast.success('تم تأكيد الحجز')
+
+      const phone = apt.patientPhone || ''
+      const message = buildBookingMessage({
+        facilityName,
+        patientName: apt.patientName,
+        patientPhone: phone,
+        doctorName: apt.doctorName,
+        specializationName: apt.specializationName,
+        date: apt.date,
+        shift: apt.period,
+        centerPhone,
+      })
+      const [smsResult, waResult] = await Promise.all([
+        sendSMS(phone, message),
+        sendWhatsApp({
+          facilityId,
+          phone,
+          patientName: apt.patientName,
+          doctorName: apt.doctorName,
+          specializationName: apt.specializationName,
+          dayName: apt.date ? getDayName(new Date(`${apt.date}T00:00:00`)) : '',
+          date: apt.date,
+          shift: apt.period,
+        }),
+      ])
+      if (smsResult.ok) toast.success('تم إرسال رسالة SMS')
+      else toast.error(`فشل SMS: ${smsResult.error}`)
+      if (waResult.ok) toast.success('تم إرسال رسالة واتساب')
+      else toast.error(`فشل واتساب: ${waResult.error}`)
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err?.message || 'حدث خطأ أثناء تأكيد الحجز')
+    } finally {
+      setConfirmingId(null)
+    }
+  }
+
   const filtered = appointments.filter((apt) => {
     if (activeTab === 'today' && apt.date !== todayStr) return false
     if (dateFilter && apt.date !== dateFilter) return false
     if (periodFilter !== 'all' && apt.period !== periodFilter) return false
     if (patientSearch.trim()) {
       const s = patientSearch.toLowerCase()
-      if (!apt.patientName?.toLowerCase().includes(s) && !apt.patientPhone?.includes(s)) return false
+      if (!apt.patientName?.toLowerCase().includes(s) && !apt.patientPhone?.includes(s) && String(apt.bookingNumber ?? '') !== s.trim()) return false
     }
     if (doctorSearch.trim()) {
       const s = doctorSearch.toLowerCase()
@@ -206,7 +259,7 @@ export default function CallCenterAppointments() {
           <input
             value={patientSearch}
             onChange={(e) => setPatientSearch(e.target.value)}
-            placeholder="المريض أو الهاتف..."
+            placeholder="المريض أو الهاتف أو كود الحجز..."
             className="w-full rounded-md border border-gray-200 bg-gray-50 pr-7 pl-2.5 py-1.5 text-xs outline-none focus:border-blue-400 focus:bg-white"
           />
         </div>
@@ -303,6 +356,9 @@ export default function CallCenterAppointments() {
 
                       <td className="py-2 px-3 text-center">
                         <p className="text-sm font-bold text-center text-gray-900 leading-tight">{apt.patientName || '—'}</p>
+                        {apt.bookingNumber != null && (
+                          <p className="text-[11px] text-blue-600 font-mono mt-0.5">كود: {apt.bookingNumber}</p>
+                        )}
                      
                       </td>
                       <td>   {apt.patientPhone && (
@@ -364,6 +420,18 @@ export default function CallCenterAppointments() {
                             {st.label}
                           </span>
                         ) : (
+                          <div className="inline-flex items-center gap-1">
+                          {apt.createdByName === 'by App' && apt.status === APPOINTMENT_STATUS.PENDING && (
+                            <button
+                              onClick={() => handleConfirm(apt)}
+                              disabled={confirmingId === apt.id}
+                              title="تأكيد الحجز"
+                              className="inline-flex items-center gap-1 rounded-md border border-green-200 bg-green-50 px-2 py-1 text-[11px] font-medium text-green-700 hover:bg-green-100 transition-colors disabled:opacity-40"
+                            >
+                              <Check className="h-3 w-3" />
+                              {confirmingId === apt.id ? '...' : 'تأكيد'}
+                            </button>
+                          )}
                           <button
                             onClick={() => handleCancel(apt.id)}
                             disabled={cancelingId === apt.id}
@@ -373,6 +441,7 @@ export default function CallCenterAppointments() {
                             <Ban className="h-3 w-3" />
                             {cancelingId === apt.id ? '...' : 'إلغاء'}
                           </button>
+                          </div>
                         )}
                       </td>
                     </tr>

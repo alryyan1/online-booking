@@ -81,29 +81,35 @@ app.post('/sms', async (req, res) => {
     }
 });
 
-// WhatsApp Proxy — each facility has its own phone number / access token / template names,
-// stored at medicalFacilities/{facilityId}/settings/whatsapp so facility-admin reads of the
-// main facility doc never expose the access token.
+// WhatsApp Proxy — كل المراكز ترسل من رقم واتساب واحد (نفس رقم التطبيق).
+// التوكن محفوظ كـ Firebase secret: WHATSAPP_ACCESS_TOKEN
+const WHATSAPP_PHONE_NUMBER_ID = '1276228115582754';
+const WHATSAPP_TEMPLATES = { booking: 'booking_message', cancel: 'cancel_booking' };
+
 app.post('/whatsapp', async (req, res) => {
-    const { facilityId, phone, type, parameters } = req.body;
+    const { facilityId, phone, type } = req.body;
     if (!facilityId) return res.status(400).json({ error: 'facilityId is required' });
 
-    const settingsSnap = await admin.firestore()
-        .collection('medicalFacilities').doc(facilityId)
-        .collection('settings').doc('whatsapp')
-        .get();
-    const settings = settingsSnap.exists ? settingsSnap.data() : null;
-    const templateName = type === 'cancel' ? settings?.cancelTemplateName : settings?.templateName;
+    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    if (!accessToken) return res.status(500).json({ error: 'WHATSAPP_ACCESS_TOKEN غير مهيأ' });
 
-    if (!settings?.phoneNumberId || !settings?.accessToken || !templateName) {
-        return res.status(400).json({ error: 'لم يتم تهيئة إعدادات واتساب لهذا المركز بعد' });
-    }
+    const facilitySnap = await admin.firestore().collection('medicalFacilities').doc(facilityId).get();
+    const facility = facilitySnap.exists ? facilitySnap.data() : {};
+    const facilityName = facility.name || '';
+    const centerPhone = facility.phone || '';
+
+    const b = req.body;
+    const values = type === 'cancel'
+        ? [b.patientName, b.doctorName, b.date, b.period, centerPhone]
+        : [facilityName, b.patientName, b.patientPhone, b.doctorName, b.specializationName, b.dayName, b.date, b.period, centerPhone];
+    const parameters = values.map((v) => String(v ?? '').trim() || '-');
+    const templateName = type === 'cancel' ? WHATSAPP_TEMPLATES.cancel : WHATSAPP_TEMPLATES.booking;
 
     console.log(`Sending WhatsApp to: ${phone}, Facility: ${facilityId}, Template: ${templateName}, Params:`, parameters);
     try {
-        const waRes = await fetch(`https://graph.facebook.com/v25.0/${settings.phoneNumberId}/messages`, {
+        const waRes = await fetch(`https://graph.facebook.com/v22.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${settings.accessToken}` },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
             body: JSON.stringify({
                 messaging_product: 'whatsapp',
                 to: normalizePhone(phone),
@@ -120,6 +126,7 @@ app.post('/whatsapp', async (req, res) => {
         });
         const data = await waRes.json();
         console.log('WhatsApp Meta API Response:', data);
+        if (!waRes.ok) return res.json({ ok: false, error: data?.error?.message || 'WhatsApp error', code: data?.error?.code });
         res.json({ ok: true, ...data });
     } catch (err) {
         console.error('WhatsApp Proxy Error:', err);
@@ -128,4 +135,4 @@ app.post('/whatsapp', async (req, res) => {
 });
 
 // تصدير الـ API
-exports.api = onRequest({ secrets: ['AIRTEL_SMS_API_KEY', 'AIRTEL_SMS_SENDER'] }, app);
+exports.api = onRequest({ secrets: ['AIRTEL_SMS_API_KEY', 'AIRTEL_SMS_SENDER', 'WHATSAPP_ACCESS_TOKEN'] }, app);
